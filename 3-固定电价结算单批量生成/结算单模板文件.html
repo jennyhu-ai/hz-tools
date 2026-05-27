@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>光伏电费结算单</title>
+<style>
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  body {
+    font-family: "SimSun", "宋体", serif;
+    font-size: 13px;
+    color: #000;
+    margin: 0;
+    padding: 0;
+  }
+
+  .container {
+    max-width: 190mm;
+    margin: 0 auto;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    margin: 0 0 12px 0;
+    letter-spacing: 3px;
+  }
+
+  .main-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+  }
+
+  .main-table th,
+  .main-table td {
+    border: 1px solid #666;
+    padding: 6px 5px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .main-table .thead {
+    background-color: #D9E1F2;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .main-table td {
+    vertical-align: middle;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .text-left {
+    text-align: left;
+  }
+
+  .total-row {
+    font-weight: bold;
+    background-color: #F2F2F2;
+  }
+
+   .account-info{
+    vertical-align: top;
+   }
+
+
+  .account-info p{
+    padding: 0;
+    margin: 0;
+    line-height: 1.6;
+    white-space: pre-line;
+
+  }
+
+
+  .main-table .note-wrap{
+    padding: 0 6px;
+  }
+
+  .main-table  .note-wrap span{
+    padding-right: 40px;
+  }
+
+
+ 
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>光伏电费结算单</h1>
+  <p>结算期间：2026/04/01-2026/04/30</p>
+
+  <table class="main-table">
+    <tr>
+      <td class="text-center"><strong>业主单位</strong></td>
+      <td colspan="2" >浙江凯意家居用品有限公司</td>
+      <td class="text-center" ><strong>地址</strong></td>
+      <td colspan="3">浙江省金华市磐安县新城区永安东路18号</td>
+    </tr>
+    <tr>
+      <td class="text-center"><strong>发电户号</strong></td>
+      <td colspan="2">3400116700746</td>
+      <td class="text-center"><strong>联系人及电话</strong></td>
+      <td  colspan="3">吴秀玲18105627206</td>
+    </tr>
+
+
+    <tr class="thead">
+      <td>电表类型</td>
+      <td>电能表号</td>
+      <td>本期示数</td>
+      <td>上期示数</td>
+      <td>倍率</td>
+      <td>抄见电量</td>
+      <td>结算电量</td>
+    </tr>
+
+    <tr>
+      <td>发电计量<br></td>
+      <td>00010039872546</td>
+      <td>10350.27</td>
+      <td>10094.35</td>
+      <td>80</td>
+      <td>20474.00</td>
+      <td>20474.00</td>
+    </tr>
+    <tr>
+      <td>发电计量</td>
+      <td>00010036697509</td>
+      <td>10436.81</td>
+      <td>10177.69</td>
+      <td>120</td>
+      <td>31094.00</td>
+      <td>31094.00</td>
+    </tr>
+    <tr>
+      <td>发电计量</td>
+      <td>发电量(总)</td>
+      <td>/</td>
+      <td>/</td>
+      <td>/</td>
+      <td>51568.00</td>
+      <td>51568.00</td>
+    </tr>
+    <tr>
+      <td>上网计量</td>
+      <td>97.11</td>
+      <td>10350.27</td>
+      <td>96.35</td>
+      <td>1500</td>
+      <td>1140.00</td>
+      <td>1140.00</td>
+    </tr>
+    <tr>
+      <td>上网计量</td>
+      <td>08450137814276</td>
+      <td>1.46</td>
+      <td>0.00</td>
+      <td>1500</td>
+      <td>2190.00</td>
+      <td>2190.00</td>
+    </tr>
+    <tr>
+      <td>上网计量</td>
+      <td>上网电量(总)</td>
+      <td>/</td>
+      <td>/</td>
+      <td>/</td>
+      <td>3330.00</td>
+      <td>3330.00</td>
+    </tr>
+
+    <tr class="thead">
+      <td>计费项目</td>
+      <td>计费数量</td>
+      <td>单位</td>
+      <td>单价</td>
+      <td>金额</td>
+      <td colspan="2">备注</td>
+    </tr>
+
+    <tr>
+      <td>自用电（总）</td>
+      <td>48238</td>
+      <td>kW·h</td>
+      <td>0.675</td>
+      <td>32560.65</td>
+      <td colspan="2" rowspan="2" style="text-align: left; font-size: 10px;"> * 自用电（总）=发电量(总)-上网电量(总)<br>* 电价根据电站能源管理合同约定</td>
+    </tr>
+   
+    <tr>
+      <td class="text-center"><strong>金额合计（大写）</strong></td>
+      <td class="text-center" colspan="4"><strong>叁万贰仟伍佰陆拾元陆角伍分</strong></td>
+      
+      
+    </tr>
+
+    <tr>
+      <td colspan="3"  class="account-info" style="text-align: left;">
+        <span>收款单位账户信息：</span>
+        <p>
+        名户名：恒臻能源发展（铜陵）有限公司
+        开户行：中国工商银行股份有限公司铜陵五松支行
+        银行账号：1308028209200113574
+        行号：102367102824
+        </p>
+      </td>
+      <td colspan="4" class="account-info" style="text-align: left;">
+        <span>付款单位账户信息：</span>
+        <p>
+      名称：安徽华畅新型建材有限责任公司
+      开户行：中国建设银行股份有限公司铜陵建龙支行
+      账号：34001662208053003451
+        </p>
+      
+      </td>
+    </tr>
+
+    <tr>
+      <td colspan="7" class="note-wrap" style="text-align: left;">
+    
+          <p style="min-height:80px;">结算单校验（盖章）</p>
+          <p><span>编制人：胡慧珍</span> <span>审核人：胡晓珍</span><span style="padding-left: 250px;">编制日期：2025年05月10日</span></p>
+       
+      </td>
+    </tr>
+
+    <tr>
+      <td colspan="7"  class="note-wrap" style="text-align: left;">
+          <p style="color:#F00; min-height: 50px;">我们将通过微信、邮件等渠道发送给贵司。本表一式两份，若对上述信息存在异议，请于收到本单据之日起 3 个工作日内，以书面形式向我司提出；逾期未提出的，视为同意按上述信息进行电费结算。</p>
+          <p ><span>联系人：胡慧珍</span> <span>联系方式：18358808812</span><span>联系地址：浙江省杭州市萧山区临浦镇联东U谷南部智造产业港2幢8楼</span></p>
+      </td>
+    </tr>
+  </table>
+
+</div>
+</body>
+</html>

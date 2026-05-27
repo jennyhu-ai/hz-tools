@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用说明 - 光伏电费结算单生成工具</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6fa; color: #333; line-height: 1.8; padding: 24px;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; }
+  .back { display: inline-block; color: #4a6cf7; text-decoration: none; font-size: 14px; margin-bottom: 20px; }
+  .back:hover { text-decoration: underline; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 28px; }
+  .card {
+    background: #fff; border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .card h2 { font-size: 18px; margin-bottom: 12px; color: #1a1a2e; }
+  .card h3 { font-size: 15px; margin: 16px 0 8px; color: #444; }
+  .card p { font-size: 14px; color: #555; margin-bottom: 8px; }
+  .card ul, .card ol { padding-left: 20px; font-size: 14px; color: #555; }
+  .card li { margin-bottom: 6px; }
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%; background: #1a73e8;
+    color: #fff; font-size: 13px; font-weight: 600; margin-right: 8px;
+  }
+  .tip { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #92400e; margin: 12px 0; }
+  .info { background: #eff6ff; border-left: 3px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #1e40af; margin: 12px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 返回工具</a>
+  <h1>光伏电费结算单生成工具 - 使用说明</h1>
+  <p class="subtitle">上传账单数据与电站信息，批量生成固定电价结算单（Excel / PDF）</p>
+
+  <div class="card">
+    <h2>功能概述</h2>
+    <p>本工具将「国网电费账单提取工具」的输出结果与「电站基本信息」相结合，自动计算电费结算金额，支持逐条预览、单份下载和批量打包导出。</p>
+  </div>
+
+  <div class="card">
+    <h2>前置准备</h2>
+    <p>使用本工具前需要准备两份文件：</p>
+    <ol>
+      <li><strong>国网电费账单提取结果</strong>：由「国网电费账单提取工具」导出的 Excel 文件，包含各电站的发电量、上网电量等数据</li>
+      <li><strong>电站基本信息</strong>：包含电站名称、并网容量、上网电价等字段的 Excel 文件（参考 <code>电站基本信息.xlsx</code>）</li>
+    </ol>
+    <div class="info">电子印章目录中可放置印章图片文件，工具会自动匹配并在生成的结算单中加盖电子印章。</div>
+  </div>
+
+  <div class="card">
+    <h2>操作步骤</h2>
+
+    <h3><span class="step-num">1</span> 上传数据文件</h3>
+    <p>在页面顶部两个上传区域分别拖入或点击选择：</p>
+    <ul>
+      <li>左侧：电站基本信息 Excel</li>
+      <li>右侧：国网电费账单提取结果 Excel</li>
+    </ul>
+    <p>上传成功后上传区域变为绿色并显示文件名。</p>
+
+    <h3><span class="step-num">2</span> 自动匹配与预览</h3>
+    <p>系统根据电站名称自动匹配两份文件中的数据，并在下方表格中展示结算清单预览，包含结算期间、电站名称、发电量、上网电量、结算金额等信息。</p>
+
+    <h3><span class="step-num">3</span> 逐条查看 / 下载</h3>
+    <p>点击表格中任意一行，弹出预览模态框，可查看该电站的完整结算单。在预览框中可选择：</p>
+    <ul>
+      <li><strong>下载 Excel</strong>：单份结算单的 Excel 格式</li>
+      <li><strong>下载 PDF</strong>：单份结算单的高清 PDF 格式（含电子印章）</li>
+    </ul>
+
+    <h3><span class="step-num">4</span> 批量导出</h3>
+    <ul>
+      <li><strong>下载全部 Excel</strong>：将所有结算单数据汇总导出为一个 Excel 文件</li>
+      <li><strong>一键打包 PDF (ZIP)</strong>：批量生成所有结算单 PDF 并打包为 ZIP 下载</li>
+    </ul>
+    <div class="tip">批量 PDF 打包的清晰度略低于逐条下载，如需高质量单份结算单，建议使用逐条下载功能。</div>
+  </div>
+
+  <div class="card">
+    <h2>结算单模板</h2>
+    <p>结算单格式基于 <code>结算单模板文件.html</code>，包含电费信息、电站信息、结算金额明细及电子印章区域。如需调整模板样式，可修改该文件。</p>
+  </div>
+</div>
+</body>
+</html>

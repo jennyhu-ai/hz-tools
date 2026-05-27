@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>国网电费账单提取工具</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "微软雅黑", sans-serif;
+  background: #f0f2f5; color: #333; min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, #1a56db, #1e40af);
+  color: #fff; padding: 24px 32px; text-align: center;
+}
+.header h1 { font-size: 22px; font-weight: 600; }
+.header p { font-size: 13px; margin-top: 6px; opacity: 0.85; }
+.container { max-width: 800px; margin: 24px auto; padding: 0 16px; }
+.card {
+  background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  padding: 24px; margin-bottom: 16px;
+}
+.upload-area {
+  border: 2px dashed #c4c4c4; border-radius: 8px; padding: 32px;
+  text-align: center; cursor: pointer; transition: all .2s;
+}
+.upload-area:hover, .upload-area.dragover {
+  border-color: #1a56db; background: #f0f4ff;
+}
+.upload-area .icon { font-size: 40px; margin-bottom: 8px; }
+.upload-area .text { font-size: 14px; color: #666; }
+.upload-area .hint { font-size: 12px; color: #999; margin-top: 4px; }
+.file-list { margin-top: 16px; }
+.file-item {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 10px 12px; border: 1px solid #e8e8e8; border-radius: 6px;
+  margin-bottom: 6px; font-size: 13px; gap: 8px;
+}
+.file-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item .status { font-size: 12px; margin-left: 12px; white-space: nowrap; }
+.file-item .status.pending { color: #999; }
+.file-item .status.ok { color: #16a34a; }
+.file-item .status.error { color: #dc2626; }
+.btn-row { display: flex; gap: 8px; margin-top: 16px; }
+.btn {
+  padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px;
+  font-weight: 500; cursor: pointer; transition: all .15s;
+}
+.btn-primary { background: #1a56db; color: #fff; }
+.btn-primary:hover { background: #1e40af; }
+.btn-primary:disabled { background: #93b4f5; cursor: not-allowed; }
+.btn-outline { background: #fff; color: #1a56db; border: 1px solid #1a56db; }
+.btn-outline:hover { background: #f0f4ff; }
+.btn-outline:disabled { color: #93b4f5; border-color: #93b4f5; cursor: not-allowed; }
+.progress-wrap { margin-top: 16px; display: none; }
+.progress-wrap.show { display: block; }
+.progress-bar {
+  width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;
+}
+.progress-bar .fill {
+  height: 100%; background: #1a56db; border-radius: 4px;
+  width: 0%; transition: width .3s;
+}
+.progress-text { font-size: 12px; color: #666; margin-top: 6px; text-align: center; }
+.summary { margin-top: 16px; font-size: 13px; color: #666; display: none; }
+.summary.show { display: block; }
+.pagination { display: none; justify-content: center; align-items: center; gap: 4px; margin-top: 12px; }
+.pagination.show { display: flex; }
+.pagination .page-btn {
+  padding: 4px 10px; border: 1px solid #d0d0d0; border-radius: 4px;
+  background: #fff; color: #333; font-size: 13px; cursor: pointer; transition: all .15s;
+}
+.pagination .page-btn:hover { border-color: #1a56db; color: #1a56db; }
+.pagination .page-btn.active { background: #1a56db; color: #fff; border-color: #1a56db; }
+.pagination .page-btn:disabled { color: #ccc; border-color: #e5e5e5; cursor: not-allowed; }
+.pagination .page-info { font-size: 13px; color: #666; margin: 0 8px; }
+#fileInput { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="../index.html" style="float:left;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;">← 返回导航</a>
+  <a href="使用说明.html" style="float:right;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;">使用说明</a>
+  <h1>国网电费账单提取工具</h1>
+  <p>上传PDF账单文件，自动提取数据并导出Excel</p>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div id="dropZone" class="upload-area">
+      <div class="icon">📄</div>
+      <div class="text">拖拽PDF文件到此处，或点击选择</div>
+      <div class="hint">支持批量上传多个PDF文件</div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf" multiple>
+
+    <div id="fileList" class="file-list"></div>
+    <div id="pagination" class="pagination"></div>
+
+    <div class="btn-row">
+      <button id="btnProcess" class="btn btn-primary" disabled>开始提取</button>
+      <button id="btnClear" class="btn btn-outline" disabled>清空列表</button>
+      <button id="btnDownload" class="btn btn-outline" disabled>下载Excel</button>
+    </div>
+
+    <div id="progressWrap" class="progress-wrap">
+      <div class="progress-bar"><div id="progressFill" class="fill"></div></div>
+      <div id="progressText" class="progress-text"></div>
+    </div>
+
+    <div id="summary" class="summary"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ===== CONSTANTS =====
+const WATERMARK_CHARS = new Set('emsbiltgofpnard-_');
+
+// ===== PDF TEXT EXTRACTION =====
+
+function isGarbled(text) {
+  return !!(text && (text.toLowerCase().includes('emss-bilg') || text.toLowerCase().includes('openapi')));
+}
+
+async function extractTextNormal(page) {
+  const textContent = await page.getTextContent();
+  const items = textContent.items;
+
+  // Method 1: Group by y position, sort by x (visual reading order)
+  const lines = {};
+  for (const item of items) {
+    if (!item.str || !item.str.trim()) continue;
+    const y = Math.round(item.transform[5]);
+    if (!lines[y]) lines[y] = [];
+    lines[y].push(item);
+  }
+
+  const result1 = [];
+  for (const y of Object.keys(lines).sort((a, b) => Number(a) - Number(b))) {
+    const lineItems = lines[y].sort((a, b) => a.transform[4] - b.transform[4]);
+    let line = lineItems[0].str;
+    let prevX1 = lineItems[0].transform[4] + (lineItems[0].width || 0);
+
+    for (let i = 1; i < lineItems.length; i++) {
+      const item = lineItems[i];
+      const gap = item.transform[4] - prevX1;
+      const charWidth = item.width > 0 ? item.width / item.str.length : 6;
+      if (gap > charWidth * 1.5) {
+        line += ' ' + item.str;
+      } else {
+        line += item.str;
+      }
+      prevX1 = item.transform[4] + (item.width || 0);
+    }
+    result1.push(line);
+  }
+
+  // Method 2: Stream order (raw). Some PDFs have better data in stream order.
+  const result2 = items.filter(it => it.str && it.str.trim()).map(it => it.str).join(' ');
+
+  // Combine both for maximum coverage
+  return result1.join('\n') + '\n' + result2;
+}
+
+async function extractTextGarbled(page) {
+  const textContent = await page.getTextContent();
+  const items = textContent.items;
+
+  // Filter using content patterns (avoid fragile operator-list color correlation)
+  function isPureWatermark(str) {
+    if (!str) return true;
+    const s = str.trim();
+    if (!s) return true;
+    // Known watermark pattern
+    if (/emss[-]?bilg/i.test(s) || /openapi/i.test(s)) return true;
+    // Pure watermark chars (single scattered letters, no digits/Chinese)
+    if (s.length <= 30 && [...s.toLowerCase()].every(c => WATERMARK_CHARS.has(c) || c === ' ' || c === '.' || c === ':')) return true;
+    return false;
+  }
+
+  let wmFiltered = 0;
+  const kept = [];
+  for (const item of items) {
+    if (isPureWatermark(item.str)) {
+      wmFiltered++;
+      continue;
+    }
+    kept.push(item);
+  }
+  console.log(`  Watermark-filtered: ${wmFiltered}, kept: ${kept.length}`);
+
+  // Rebuild text: group by y, sort by x, detect gaps
+  const lines = {};
+  for (const item of kept) {
+    if (!item.str || !item.str.trim()) continue;
+    const y = Math.round(item.transform[5]);
+    if (!lines[y]) lines[y] = [];
+    lines[y].push(item);
+  }
+
+  const result = [];
+  for (const y of Object.keys(lines).sort((a, b) => Number(a) - Number(b))) {
+    const lineItems = lines[y].sort((a, b) => a.transform[4] - b.transform[4]);
+    let line = lineItems[0].str;
+    let prevX1 = lineItems[0].transform[4] + (lineItems[0].width || 0);
+
+    for (let i = 1; i < lineItems.length; i++) {
+      const item = lineItems[i];
+      const gap = item.transform[4] - prevX1;
+      const charWidth = item.width > 0 ? item.width / item.str.length : 6;
+      if (gap > charWidth * 1.5) {
+        line += ' ' + item.str;
+      } else {
+        line += item.str;
+      }
+      prevX1 = item.transform[4] + (item.width || 0);
+    }
+    result.push(line);
+  }
+  return result.join('\n');
+}
+
+async function extractText(pdf, pageNum, page) {
+  // page is pre-loaded, just get text content
+  const textContent = await page.getTextContent();
+  const quickText = textContent.items.map(it => it.str).join('');
+  if (isGarbled(quickText)) {
+    console.log(`  Page ${pageNum}: Detected garbled PDF, using watermark filter...`);
+    try {
+      const text = await extractTextGarbled(page);
+      return { text, garbled: true };
+    } catch (e) {
+      console.warn(`  Watermark filter failed, using normal extraction:`, e.message);
+      const text = await extractTextNormal(page);
+      return { text, garbled: false, garbledError: e.message };
+    }
+  }
+  const text = await extractTextNormal(page);
+  return { text, garbled: false };
+}
+
+// ===== TEXT NORMALIZATION =====
+
+function normalizeChineseText(text) {
+  // Remove spaces between consecutive CJK characters.
+  // Uses \\u escapes INSIDE regex literals (not new RegExp strings) for reliability.
+  // U+4E00..U+9FFF = CJK Unified Ideographs
+  // U+3400..U+4DBF = CJK Extension A
+  // U+F900..U+FAFF = CJK Compatibility Ideographs
+  text = text.replace(/([一-鿿㐀-䶿豈-﫿])\s+([一-鿿㐀-䶿豈-﫿])/g, '$1$2');
+  // CJK char + space(s) + CJK punctuation
+  text = text.replace(/([一-鿿㐀-䶿豈-﫿])\s+([　-〿＀-￯])/g, '$1$2');
+  // CJK punctuation + space(s) + CJK char
+  text = text.replace(/([　-〿＀-￯])\s+([一-鿿㐀-䶿豈-﫿])/g, '$1$2');
+  return text;
+}
+
+// ===== FIELD PARSERS =====
+
+function parseDate(text) {
+  // Normalize: collapse all whitespace to single spaces
+  const normalized = text.replace(/\s+/g, ' ');
+
+  // Find '账单周期' marker (try regex with optional whitespace, then fallback keywords)
+  let markerMatch = normalized.match(/账\s*单\s*周\s*期/);
+  let markerIdx = markerMatch ? markerMatch.index : -1;
+  if (markerIdx < 0) markerIdx = normalized.indexOf('账单');
+  if (markerIdx < 0) markerIdx = normalized.indexOf('电费账单');
+  console.log(`  parseDate: markerIdx=${markerIdx}, textLen=${normalized.length}`);
+
+  const context = markerIdx >= 0
+    ? normalized.substring(markerIdx, markerIdx + 500)
+    : normalized.substring(0, 800);
+
+  // Find all dates in context
+  const datesInContext = [...context.matchAll(/(\d{4}-\d{2}-\d{2})/g)].map(m => m[0]);
+  console.log(`  parseDate: dates in context: ${JSON.stringify(datesInContext)}`);
+
+  if (datesInContext.length >= 2) {
+    // First two dates near '账单周期' are the billing period
+    return `${datesInContext[0]} 至 ${datesInContext[1]}`;
+  }
+
+  // Fallback: search entire text for dates
+  const allDates = [...normalized.matchAll(/(\d{4}-\d{2}-\d{2})/g)].map(m => m[0]);
+  // Take first two dates that are in the current year range (202x)
+  const recent = allDates.filter(d => d >= '2020-01-01' && d <= '2030-12-31');
+  console.log(`  parseDate: allDates count=${allDates.length}, recent count=${recent.length}`);
+  if (recent.length >= 2) {
+    return `${recent[0]} 至 ${recent[1]}`;
+  }
+  if (allDates.length >= 2) {
+    return `${allDates[0]} 至 ${allDates[1]}`;
+  }
+  return '';
+}
+
+function parseAccountNumber(text) {
+  // Allow optional whitespace between characters of the keyword
+  const m = text.match(/发\s*电\s*户\s*[号编]\s*[号号]?\s*[:：]?\s*(\d{10,20})/);
+  return m ? m[1] : '';
+}
+
+function parseGeneration(text) {
+  // Allow optional whitespace within keyword; strip all whitespace for number matching
+  const stripped = text.replace(/\s+/g, '');
+  const m = stripped.match(/发电(?:结算电)?量([\d.]+)千瓦时/);
+  if (!m) {
+    const idx = stripped.indexOf('发电');
+    console.log(`  parseGeneration FAILED. '发电' at idx=${idx}, context: ${idx >= 0 ? stripped.substring(idx, idx + 60) : 'NOT FOUND'}`);
+  }
+  return m ? m[1] : '';
+}
+
+function parseGridConnected(text) {
+  // Allow optional whitespace within keyword; strip all whitespace for number matching
+  const stripped = text.replace(/\s+/g, '');
+  const m = stripped.match(/上网(?:结算)?电量([\d.]+)千瓦时/);
+  if (!m) {
+    const idx = stripped.indexOf('上网');
+    console.log(`  parseGridConnected FAILED. '上网' at idx=${idx}, context: ${idx >= 0 ? stripped.substring(idx, idx + 60) : 'NOT FOUND'}`);
+  }
+  return m ? m[1] : '';
+}
+
+function parseReverseReadings(text, gridKwh) {
+  const flat = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ');
+
+  const entries = [];
+  // Allow optional whitespace between every character of the keyword
+  const labelRe = /反\s*向\s*有\s*功\s*[（(]\s*总\s*[）)]?/g;
+  let labelMatch;
+  while ((labelMatch = labelRe.exec(flat)) !== null) {
+    console.log(`  parseReverse: found keyword at idx=${labelMatch.index}, match="${labelMatch[0]}"`);
+    const after = flat.substring(labelMatch.index + labelMatch[0].length,
+                                 labelMatch.index + labelMatch[0].length + 120);
+    console.log(`  parseReverse: after="${after.substring(0, 80)}"`);
+
+    // 5-number pattern
+    const m5 = after.match(/([\d]+\.[\d]+)\s+([\d]+\.[\d]+)\s+(\d+)\s+(\d+)\s+(\d+)/);
+    if (m5) {
+      console.log(`  parseReverse: matched 5-number pattern: ${m5[1]} ${m5[2]} ${m5[3]} ${m5[4]} ${m5[5]}`);
+      entries.push([m5[1], m5[2], m5[3], m5[4], m5[5]]);
+      continue;
+    }
+    // 4-number pattern (福建)
+    const m4 = after.match(/([\d]+\.[\d]+)\s+([\d]+\.[\d]+)\s+(\d+)\s+(\d+)/);
+    if (m4) {
+      console.log(`  parseReverse: matched 4-number pattern: ${m4[1]} ${m4[2]} ${m4[3]} ${m4[4]}`);
+      entries.push([m4[1], m4[2], m4[3], m4[4], m4[4]]);
+    } else {
+      console.log(`  parseReverse: NO number pattern matched!`);
+    }
+  }
+
+  if (entries.length === 0) {
+    // Debug: search for '反向有功' anywhere
+    const idx = flat.indexOf('反向有功');
+    console.log(`  parseReverse: NO entries found! '反向有功' in flat at idx=${idx}, context: ${idx >= 0 ? flat.substring(idx, idx + 100) : 'NOT FOUND'}`);
+  }
+
+  if (!entries.length) return { prev: '', curr: '', mult: '', metered: '', billed: '' };
+
+  if (entries.length === 1) {
+    return {
+      prev: entries[0][0], curr: entries[0][1], mult: entries[0][2],
+      metered: entries[0][3], billed: entries[0][4]
+    };
+  }
+
+  // Prefer matching grid-connected kwh
+  if (gridKwh) {
+    for (const e of entries) {
+      try {
+        if (Math.abs(parseFloat(e[3]) - parseFloat(gridKwh)) < 0.01) {
+          return { prev: e[0], curr: e[1], mult: e[2], metered: e[3], billed: e[4] };
+        }
+      } catch (_) {}
+    }
+  }
+
+  // First non-zero
+  for (const e of entries) {
+    try { if (parseFloat(e[3]) > 0) return { prev: e[0], curr: e[1], mult: e[2], metered: e[3], billed: e[4] }; } catch (_) {}
+  }
+
+  return {
+    prev: entries[0][0], curr: entries[0][1], mult: entries[0][2],
+    metered: entries[0][3], billed: entries[0][4]
+  };
+}
+
+function parseMeterReadings(text) {
+  let flat = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ');
+  // Fix garbled concatenated decimals
+  flat = flat.replace(/(\d+\.\d{4})(\d+\.\d{4})/g, '$1 $2');
+
+  // Step 1: Find each 正向有功（总）and extract data row
+  const dataRows = [];
+  const labelRe = /正\s*向\s*有\s*功\s*[（(]\s*总\s*[）)]?/g;
+  let labelMatch;
+  while ((labelMatch = labelRe.exec(flat)) !== null) {
+    const labelPos = labelMatch.index;
+    const after = flat.substring(labelMatch.index + labelMatch[0].length,
+                                 labelMatch.index + labelMatch[0].length + 120);
+
+    // 5-number pattern
+    const m5 = after.match(/([\d]+\.[\d]+)\s+([\d]+\.[\d]+)\s+(\d+)\s+(\d+)\s+(\d+)/);
+    if (m5) {
+      dataRows.push({ prev: m5[1], curr: m5[2], mult: m5[3], metered: m5[4], billed: m5[5], pos: labelPos });
+      continue;
+    }
+    // 4-number pattern (福建)
+    const m4 = after.match(/([\d]+\.[\d]+)\s+([\d]+\.[\d]+)\s+(\d+)\s+(\d+)/);
+    if (m4) {
+      dataRows.push({ prev: m4[1], curr: m4[2], mult: m4[3], metered: m4[4], billed: m4[4], pos: labelPos });
+    }
+  }
+
+  // Step 2: Find 发电 and 上网 meters
+  // Primary regex: exact match
+  const meterRe = /电\s*能\s*表\s*编\s*号\s*[：:\s]*(\d+)/g;
+  let meterMatches = [...flat.matchAll(meterRe)];
+
+  // Fallback: if primary regex found nothing, try looser match (handles garbled text)
+  if (meterMatches.length === 0) {
+    const looseRe = /电.{0,3}能.{0,3}表.{0,3}编.{0,3}号.{0,5}[:：]?\s*(\d{4,22})/g;
+    meterMatches = [...flat.matchAll(looseRe)];
+    console.log('  Using loose meter regex, found:', meterMatches.length);
+  }
+
+  const genMeters = [];
+  const gridMeters = [];
+
+  for (let i = 0; i < meterMatches.length; i++) {
+    const mm = meterMatches[i];
+    const beforeWide = flat.substring(Math.max(0, mm.index - 120), mm.index);
+    const beforeNear = flat.substring(Math.max(0, mm.index - 40), mm.index);
+    const afterEnd = i + 1 < meterMatches.length ? meterMatches[i + 1].index : mm.index + mm[0].length + 300;
+    const after = flat.substring(mm.index + mm[0].length, Math.min(afterEnd, mm.index + mm[0].length + 300));
+
+    let isGen = false;
+    let isGrid = false;
+    // Strong keywords must be near the meter number (within 40 chars)
+    if (beforeNear.includes('发电计量点') || beforeNear.includes('发电关口')) isGen = true;
+    if (beforeNear.includes('上网计量点') || beforeNear.includes('上网关口')) isGrid = true;
+    // Weaker keywords can be further (within 120 chars)
+    if (!isGen && !isGrid) {
+      if (beforeWide.includes('发电补助')) isGen = true;
+      if (beforeWide.includes('上网电量电费')) isGrid = true;
+    }
+    if (!isGen && !isGrid) {
+      if (after.includes('正向有功')) isGen = true;
+      else if (after.includes('反向有功')) isGrid = true;
+    }
+    if (isGen && !isGrid) {
+      genMeters.push({ num: mm[1], pos: mm.index });
+    }
+    if (isGrid && !isGen) {
+      gridMeters.push({ num: mm[1], pos: mm.index });
+    }
+  }
+
+  // Step 3: Handle 湖北 grouped format
+  if (genMeters.length > dataRows.length && dataRows.length > 0) {
+    const firstLabelPos = dataRows[0].pos;
+
+    // Find table start marker
+    let tableStart = firstLabelPos;
+    for (const marker of ['本期电量明细', '示数类型']) {
+      const p = flat.lastIndexOf(marker, Math.max(0, firstLabelPos - 250));
+      if (p > 0) { tableStart = p; break; }
+    }
+
+    // Extra rows before first label
+    const beforeContext = flat.substring(tableStart, firstLabelPos);
+    const extraRows = [];
+    const re = /([\d]+\.[\d]+)\s+([\d]+\.[\d]+)\s+(\d+)\s+(\d+)\s+(\d+)/g;
+    let m;
+    while ((m = re.exec(beforeContext)) !== null) {
+      const candidate = { prev: m[1], curr: m[2], mult: m[3], metered: m[4], billed: m[5] };
+      if (!dataRows.some(dr => dr.prev === candidate.prev && dr.curr === candidate.curr && dr.mult === candidate.mult)) {
+        extraRows.push({ ...candidate, pos: tableStart + m.index });
+      }
+    }
+
+    // Extra rows after last label
+    const lastLabelPos = dataRows[dataRows.length - 1].pos;
+    let tableEnd = flat.indexOf('本期电费明细', lastLabelPos);
+    if (tableEnd === -1) tableEnd = flat.indexOf('标注有', lastLabelPos);
+    if (tableEnd === -1) tableEnd = lastLabelPos + 200;
+
+    const afterContext = flat.substring(lastLabelPos, tableEnd);
+    const re2 = /([\d]+\.[\d]+)\s+([\d]+\.[\d]+)\s+(\d+)\s+(\d+)\s+(\d+)/g;
+    while ((m = re2.exec(afterContext)) !== null) {
+      const candidate = { prev: m[1], curr: m[2], mult: m[3], metered: m[4], billed: m[5] };
+      if (!dataRows.some(dr => dr.prev === candidate.prev && dr.curr === candidate.curr && dr.mult === candidate.mult)) {
+        extraRows.push({ ...candidate, pos: lastLabelPos + m.index });
+      }
+    }
+
+    const extraBefore = extraRows.filter(r => r.pos < firstLabelPos);
+    const extraAfter = extraRows.filter(r => r.pos >= firstLabelPos);
+    dataRows.splice(0, dataRows.length,
+      ...[...extraBefore, ...dataRows, ...extraAfter].sort((a, b) => a.pos - b.pos));
+  }
+
+  // Step 4: Deduplicate by value
+  const seen = new Set();
+  const filtered = [];
+  for (const dr of dataRows) {
+    const key = `${dr.prev}|${dr.curr}|${dr.mult}|${dr.metered}|${dr.billed}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      filtered.push(dr);
+    }
+  }
+
+  console.log(`  parseMeterReadings: ${meterMatches.length} meter numbers, ${dataRows.length} data rows, gen=${genMeters.length}, grid=${gridMeters.length}`);
+
+  // Step 5: Pair meters with data rows
+  genMeters.sort((a, b) => a.pos - b.pos);
+  filtered.sort((a, b) => a.pos - b.pos);
+
+  const pairs = [];
+  for (let i = 0; i < filtered.length; i++) {
+    const dr = filtered[i];
+    const meterNum = i < genMeters.length ? genMeters[i].num
+                   : (genMeters.length > 0 ? genMeters[genMeters.length - 1].num : '');
+    pairs.push({
+      meterNumber: meterNum,
+      prevReading: dr.prev,
+      currReading: dr.curr,
+      multiplier: dr.mult,
+      metered: dr.metered,
+      billed: dr.billed,
+    });
+  }
+
+  const gridMeterNumber = gridMeters.length > 0 ? gridMeters[0].num : '';
+  return { genPairs: pairs, gridMeterNumber };
+}
+
+async function processPDF(file, pageCount = 1) {
+  const filename = file.name;
+  const diag = { filename, garbled: false, path: 'normal', fieldsFound: [], fieldsMissing: [], errors: [], textPreview: '', textLength: 0 };
+  console.log(`Processing: ${filename}`);
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    // Extract text from all pages
+    const allTexts = [];
+    for (let p = 1; p <= Math.min(pageCount, pdf.numPages); p++) {
+      const page = await pdf.getPage(p);
+      const result = await extractText(pdf, p, page);
+      if (result.garbled) diag.garbled = true;
+      if (result.garbledError) diag.errors.push(`Page ${p}: ${result.garbledError}`);
+      allTexts.push(result.text);
+    }
+    const text = normalizeChineseText(allTexts.join('\n'));
+    diag.textLength = text.length;
+    diag.textPreview = text.substring(0, 500);
+    console.log(`=== ${filename} extracted text (first 500 chars) ===`);
+    console.log(text.substring(0, 500));
+    console.log(`=== end preview ===`);
+
+    const billingPeriod = parseDate(text);
+    const accountNum = parseAccountNumber(text);
+    const generation = parseGeneration(text);
+    const gridConnected = parseGridConnected(text);
+    const reverse = parseReverseReadings(text, gridConnected);
+    const { genPairs: meterPairs, gridMeterNumber } = parseMeterReadings(text);
+
+    // Track found/missing fields
+    if (billingPeriod) diag.fieldsFound.push('账单周期'); else diag.fieldsMissing.push('账单周期');
+    if (accountNum) diag.fieldsFound.push('发电户号'); else diag.fieldsMissing.push('发电户号');
+    if (generation) diag.fieldsFound.push('发电量'); else diag.fieldsMissing.push('发电量');
+    if (gridConnected) diag.fieldsFound.push('上网电量'); else diag.fieldsMissing.push('上网电量');
+    if (reverse.prev) diag.fieldsFound.push('反向有功'); else diag.fieldsMissing.push('反向有功');
+    if (meterPairs.length > 0) diag.fieldsFound.push(`正向有功(${meterPairs.length}条)`); else diag.fieldsMissing.push('正向有功');
+
+    // Debug: search for meter-related patterns in the text
+    const flatDbg = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ');
+    const meterMatchesDbg = [...flatDbg.matchAll(/电\s*能\s*表\s*编\s*号\s*[：:\s]*(\d+)/g)];
+    diag.meterMatchCount = meterMatchesDbg.length;
+    diag.meterNumbers = meterMatchesDbg.map(m => m[1]);
+    diag.gridMeterFound = gridMeterNumber;
+    // Find the context around first "电能表" for debugging
+    const dianIdx = flatDbg.indexOf('电能表');
+    diag.dianContext = dianIdx >= 0 ? flatDbg.substring(Math.max(0, dianIdx - 20), dianIdx + 80) : 'NOT FOUND';
+    console.log(`  DEBUG meterRegex matches: ${diag.meterMatchCount}, numbers: [${diag.meterNumbers}]`);
+    console.log(`  DEBUG gridMeter: '${diag.gridMeterFound}'`);
+    console.log(`  DEBUG 电能表 context: ${diag.dianContext}`);
+
+    console.log(`  账单周期: ${billingPeriod}`);
+    console.log(`  户号: ${accountNum}`);
+    console.log(`  发电量: ${generation} kWh`);
+    console.log(`  上网电量: ${gridConnected} kWh`);
+    console.log(`  反向有功(总): 上期=${reverse.prev}, 本期=${reverse.curr}, 倍率=${reverse.mult}, 抄见=${reverse.metered}, 计费=${reverse.billed}`);
+    console.log(`  正向有功(总)记录数: ${meterPairs.length}`);
+
+    const results = [];
+    for (let i = 0; i < meterPairs.length; i++) {
+      const p = meterPairs[i];
+      results.push({
+        filename, billingPeriod, accountNumber: accountNum,
+        generationKwh: generation, gridConnectedKwh: gridConnected,
+        gridMeterNumber,
+        meterIndex: i + 1,
+        meterNumber: p.meterNumber,
+        zxPrevReading: p.prevReading,
+        zxCurrReading: p.currReading,
+        zxMultiplier: p.multiplier,
+        zxMetered: p.metered,
+        zxBilled: p.billed,
+        fxPrevReading: reverse.prev,
+        fxCurrReading: reverse.curr,
+        fxMultiplier: reverse.mult,
+        fxMetered: reverse.metered,
+        fxBilled: reverse.billed,
+      });
+    }
+
+    return { results, diag };
+  } catch (err) {
+    console.error(`Error processing ${filename}:`, err);
+    diag.errors.push(err.message);
+    return { results: [], diag };
+  }
+}
+
+// ===== EXCEL EXPORT =====
+
+function toNum(val) {
+  if (val === '' || val === null || val === undefined) return '';
+  const n = parseFloat(val);
+  return isNaN(n) ? val : n;
+}
+
+function styleHeader(ws, row, colCount) {
+  for (let c = 1; c <= colCount; c++) {
+    const cell = ws.getCell(row, c);
+    cell.font = { name: '微软雅黑', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = {
+      top: { style: 'thin' }, bottom: { style: 'thin' },
+      left: { style: 'thin' }, right: { style: 'thin' }
+    };
+  }
+}
+
+function styleDataCell(cell) {
+  cell.font = { name: '微软雅黑', size: 10 };
+  cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  cell.border = {
+    top: { style: 'thin' }, bottom: { style: 'thin' },
+    left: { style: 'thin' }, right: { style: 'thin' }
+  };
+}
+
+function exportToExcel(allResults) {
+  const workbook = new ExcelJS.Workbook();
+
+  // ---- Sheet 1: 账单汇总 ----
+  const ws1 = workbook.addWorksheet('账单汇总');
+  const headers1 = [
+    '序号', '文件名', '账单周期',
+    '发电户号', '发电量(千瓦时)', '上网电量(千瓦时)', '企业自用电量(千瓦时)'
+  ];
+  const colWidths1 = [6, 30, 26, 24, 16, 16, 18];
+  ws1.columns = headers1.map((h, i) => ({ header: h, width: colWidths1[i] }));
+  styleHeader(ws1, 1, headers1.length);
+
+  const seenFiles = new Set();
+  let seq = 0;
+  for (const r of allResults) {
+    if (seenFiles.has(r.filename)) continue;
+    seenFiles.add(r.filename);
+    seq++;
+    const gen = parseFloat(r.generationKwh) || 0;
+    const grid = parseFloat(r.gridConnectedKwh) || 0;
+    const selfUse = Math.max(0, gen - grid);
+    const row = ws1.addRow([
+      seq, r.filename, r.billingPeriod, r.accountNumber,
+      toNum(r.generationKwh), toNum(r.gridConnectedKwh), selfUse
+    ]);
+    row.eachCell(cell => styleDataCell(cell));
+  }
+  ws1.views = [{ state: 'frozen', ySplit: 1 }];
+
+  // ---- Sheet 2: 正向有功明细 ----
+  const ws2 = workbook.addWorksheet('正向有功明细');
+  const headers2 = [
+    '序号', '发电户号', '发电电能表编号',
+    '正向有功(总)-上期示数', '正向有功(总)-本期示数', '正向有功(总)-倍率',
+    '抄见电量', '计费电量'
+  ];
+  const colWidths2 = [6, 24, 24, 22, 22, 18, 14, 14];
+  ws2.columns = headers2.map((h, i) => ({ header: h, width: colWidths2[i] }));
+  styleHeader(ws2, 1, headers2.length);
+
+  allResults.forEach((r, i) => {
+    const row = ws2.addRow([
+      i + 1, r.accountNumber, r.meterNumber,
+      toNum(r.zxPrevReading), toNum(r.zxCurrReading), toNum(r.zxMultiplier),
+      toNum(r.zxMetered), toNum(r.zxBilled)
+    ]);
+    row.eachCell(cell => styleDataCell(cell));
+  });
+  ws2.views = [{ state: 'frozen', ySplit: 1 }];
+
+  // ---- Sheet 3: 反向有功明细 ----
+  const ws3 = workbook.addWorksheet('反向有功明细');
+  const headers3 = [
+    '序号', '发电户号', '上网电能表编号',
+    '反向有功(总)-上期示数', '反向有功(总)-本期示数', '反向有功(总)-倍率',
+    '抄见电量', '计费电量'
+  ];
+  const colWidths3 = [6, 24, 24, 22, 22, 18, 14, 14];
+  ws3.columns = headers3.map((h, i) => ({ header: h, width: colWidths3[i] }));
+  styleHeader(ws3, 1, headers3.length);
+
+  const seenFilesForFx = new Set();
+  let fxIdx = 0;
+  for (const r of allResults) {
+    if (seenFilesForFx.has(r.filename)) continue;
+    seenFilesForFx.add(r.filename);
+    fxIdx++;
+    const row = ws3.addRow([
+      fxIdx, r.accountNumber, r.gridMeterNumber || '',
+      toNum(r.fxPrevReading), toNum(r.fxCurrReading), toNum(r.fxMultiplier),
+      toNum(r.fxMetered), toNum(r.fxBilled)
+    ]);
+    row.eachCell(cell => styleDataCell(cell));
+  }
+  ws3.views = [{ state: 'frozen', ySplit: 1 }];
+
+  // ---- Sheet 4: 汇总统计 ----
+  const ws4 = workbook.addWorksheet('汇总统计');
+  const headers4 = ['序号', '文件名', '发电量(千瓦时)', '上网电量(千瓦时)', '计费电量合计', '电能表数'];
+  const colWidths4 = [6, 30, 16, 16, 16, 12];
+  ws4.columns = headers4.map((h, i) => ({ header: h, width: colWidths4[i] }));
+  styleHeader(ws4, 1, headers4.length);
+
+  const fileSummary = {};
+  for (const r of allResults) {
+    const fn = r.filename;
+    if (!fileSummary[fn]) {
+      fileSummary[fn] = { generation: 0, grid: 0, billedSum: 0, meterCount: 0 };
+    }
+    try { fileSummary[fn].generation = parseFloat(r.generationKwh) || 0; } catch (_) {}
+    try { fileSummary[fn].grid = parseFloat(r.gridConnectedKwh) || 0; } catch (_) {}
+    try { fileSummary[fn].billedSum += parseFloat(r.zxBilled) || 0; } catch (_) {}
+    fileSummary[fn].meterCount++;
+  }
+
+  let idx = 0;
+  for (const [fn, info] of Object.entries(fileSummary)) {
+    idx++;
+    const row = ws4.addRow([idx, fn, info.generation, info.grid, info.billedSum, info.meterCount]);
+    row.eachCell(cell => styleDataCell(cell));
+  }
+
+  const totalGen = Object.values(fileSummary).reduce((s, fs) => s + fs.generation, 0);
+  const totalGrid = Object.values(fileSummary).reduce((s, fs) => s + fs.grid, 0);
+  const totalBilled = Object.values(fileSummary).reduce((s, fs) => s + fs.billedSum, 0);
+  const totalMeters = Object.values(fileSummary).reduce((s, fs) => s + fs.meterCount, 0);
+  const totalRow = ws4.addRow(['', '合计', totalGen, totalGrid, totalBilled, totalMeters]);
+  totalRow.eachCell(cell => {
+    styleDataCell(cell);
+    cell.font = { name: '微软雅黑', size: 10, bold: true };
+  });
+  ws4.views = [{ state: 'frozen', ySplit: 1 }];
+
+  return workbook;
+}
+
+// ===== UI =====
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const btnProcess = document.getElementById('btnProcess');
+const btnClear = document.getElementById('btnClear');
+const btnDownload = document.getElementById('btnDownload');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const summaryDiv = document.getElementById('summary');
+const pagination = document.getElementById('pagination');
+
+let files = [];
+let allResults = [];
+let currentPage = 1;
+const PAGE_SIZE = 10;
+
+function updateButtons() {
+  btnProcess.disabled = files.length === 0;
+  btnClear.disabled = files.length === 0;
+  btnDownload.disabled = allResults.length === 0;
+}
+
+function renderFileList() {
+  const totalPages = Math.ceil(files.length / PAGE_SIZE) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageFiles = files.slice(start, start + PAGE_SIZE);
+
+  fileList.innerHTML = pageFiles.map((f, i) => {
+    const globalIdx = start + i;
+    let diagHtml = '';
+    if (f.diag) {
+      const d = f.diag;
+      const foundStr = d.fieldsFound.length > 0 ? `<span style="color:#16a34a">已提取: ${d.fieldsFound.join(', ')}</span>` : '';
+      const missingStr = d.fieldsMissing.length > 0 ? `<span style="color:#dc2626">缺失: ${d.fieldsMissing.join(', ')}</span>` : '';
+      const garbledStr = d.garbled ? ' <span style="color:#d97706">[水印]</span>' : '';
+      const errStr = d.errors.length > 0 ? `<br><span style="color:#dc2626;font-size:11px">错误: ${d.errors.join('; ')}</span>` : '';
+      diagHtml = `<br><span style="font-size:11px">${foundStr} ${missingStr}${garbledStr}${errStr}</span>`;
+    }
+    return `
+      <div class="file-item">
+        <div style="flex:1;min-width:0">
+          <span class="name">${globalIdx + 1}. ${f.name}</span>
+          ${diagHtml}
+        </div>
+        <span class="status ${f.status || 'pending'}">${f.statusText || '等待处理'}</span>
+      </div>
+    `;
+  }).join('');
+
+  renderPagination(totalPages);
+  updateButtons();
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderFileList();
+}
+
+function renderPagination(totalPages) {
+  if (totalPages <= 1) {
+    pagination.classList.remove('show');
+    return;
+  }
+  pagination.classList.add('show');
+
+  let html = '';
+  html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">上一页</button>`;
+
+  for (let p = 1; p <= totalPages; p++) {
+    const activeClass = p === currentPage ? ' active' : '';
+    html += `<button class="page-btn${activeClass}" onclick="goToPage(${p})">${p}</button>`;
+  }
+
+  html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">下一页</button>`;
+  html += `<span class="page-info">共 ${totalPages} 页 / ${files.length} 个文件</span>`;
+  pagination.innerHTML = html;
+}
+
+function addFiles(newFiles) {
+  for (const f of newFiles) {
+    if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+      files.push({ file: f, name: f.name, status: 'pending', statusText: '等待处理' });
+    }
+  }
+  currentPage = 1;
+  renderFileList();
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => {
+  addFiles(fileInput.files);
+  fileInput.value = '';
+});
+
+btnClear.addEventListener('click', () => {
+  files = [];
+  allResults = [];
+  currentPage = 1;
+  renderFileList();
+  summaryDiv.classList.remove('show');
+  progressWrap.classList.remove('show');
+  updateButtons();
+});
+
+btnProcess.addEventListener('click', async () => {
+  if (files.length === 0) return;
+
+  allResults = [];
+  progressWrap.classList.add('show');
+  summaryDiv.classList.remove('show');
+  btnProcess.disabled = true;
+  btnDownload.disabled = true;
+
+  for (let i = 0; i < files.length; i++) {
+    files[i].status = 'processing';
+    files[i].statusText = '处理中...';
+    renderFileList();
+
+    const pct = Math.round((i / files.length) * 100);
+    progressFill.style.width = pct + '%';
+    progressText.textContent = `处理中 ${i}/${files.length}`;
+
+    try {
+      const { results, diag } = await processPDF(files[i].file, 3);
+      allResults.push(...results);
+      files[i].diag = diag;
+      files[i].status = diag.errors.length > 0 ? 'error' : 'ok';
+      files[i].statusText = diag.errors.length > 0 ? '处理出错' : `完成 (${results.length}条记录)`;
+    } catch (err) {
+      console.error(`Error processing ${files[i].name}:`, err);
+      files[i].status = 'error';
+      files[i].statusText = '处理失败: ' + err.message;
+    }
+  }
+
+  progressFill.style.width = '100%';
+  progressText.textContent = `完成 ${files.length}/${files.length}`;
+  renderFileList();
+
+  summaryDiv.innerHTML = `共处理 ${files.length} 个文件，提取 ${allResults.length} 条记录`;
+  summaryDiv.classList.add('show');
+  btnProcess.disabled = false;
+  btnDownload.disabled = allResults.length === 0;
+});
+
+btnDownload.addEventListener('click', async () => {
+  if (allResults.length === 0) return;
+
+  const workbook = exportToExcel(allResults);
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '国网电费账单提取.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// Initial state
+updateButtons();
+</script>
+</body>
+</html>

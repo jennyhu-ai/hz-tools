@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用说明 - 约束单生成器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6fa; color: #333; line-height: 1.8; padding: 24px;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; }
+  .back { display: inline-block; color: #4a6cf7; text-decoration: none; font-size: 14px; margin-bottom: 20px; }
+  .back:hover { text-decoration: underline; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 28px; }
+  .card {
+    background: #fff; border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .card h2 { font-size: 18px; margin-bottom: 12px; color: #1a1a2e; }
+  .card h3 { font-size: 15px; margin: 16px 0 8px; color: #444; }
+  .card p { font-size: 14px; color: #555; margin-bottom: 8px; }
+  .card ul { padding-left: 20px; font-size: 14px; color: #555; }
+  .card li { margin-bottom: 6px; }
+  .field-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .field-table th { background: #f0f2f5; padding: 10px 12px; text-align: left; font-weight: 600; }
+  .field-table td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px; }
+  .badge-req { background: #fee2e2; color: #dc2626; }
+  .badge-opt { background: #e0f2fe; color: #0284c7; }
+  .tip { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #92400e; margin: 12px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 返回工具</a>
+  <h1>约束单生成器 - 使用说明</h1>
+  <p class="subtitle">用于生成施工现场违规约束单，支持图片导出与打印</p>
+
+  <div class="card">
+    <h2>功能概述</h2>
+    <p>本工具用于施工现场管理，当发现安全、质量、文明施工等方面的违规行为时，可快速生成标准化的约束单文档，支持单张导出、批量导出图片以及直接打印。</p>
+  </div>
+
+  <div class="card">
+    <h2>操作步骤</h2>
+    <h3>1. 填写基本信息</h3>
+    <p>在左侧编辑面板中依次填写以下字段，右侧会实时预览约束单效果：</p>
+    <table class="field-table">
+      <tr><th>字段</th><th>说明</th><th>必填</th></tr>
+      <tr><td>编号</td><td>约束单唯一编号，如 YS-2026-001</td><td><span class="badge badge-req">必填</span></td></tr>
+      <tr><td>工程名称</td><td>当前施工项目名称</td><td><span class="badge badge-req">必填</span></td></tr>
+      <tr><td>约束日期</td><td>违规发生的日期</td><td><span class="badge badge-req">必填</span></td></tr>
+      <tr><td>现场负责人</td><td>水印及文档中显示的负责人姓名</td><td><span class="badge badge-opt">选填</span></td></tr>
+      <tr><td>施工班组</td><td>对应合同中的施工班组名称</td><td><span class="badge badge-opt">选填</span></td></tr>
+      <tr><td>运营主管</td><td>施工运营主管姓名</td><td><span class="badge badge-opt">选填</span></td></tr>
+    </table>
+
+    <h3>2. 设置违规信息</h3>
+    <table class="field-table">
+      <tr><th>字段</th><th>说明</th><th>必填</th></tr>
+      <tr><td>违规类型</td><td>下拉选择：安全违规 / 质量违规 / 文明施工违规 / 进度违规 / 材料管理违规 / 其他违规 / 客户满意度</td><td><span class="badge badge-req">必填</span></td></tr>
+      <tr><td>违规程度</td><td>一般违规 1元+ 或 严重违规 100元+</td><td><span class="badge badge-req">必填</span></td></tr>
+      <tr><td>违规次数</td><td>该人员/班组第几次违规，如"第1次"</td><td><span class="badge badge-req">必填</span></td></tr>
+      <tr><td>乐捐金额</td><td>罚款金额（元），如 200</td><td><span class="badge badge-req">必填</span></td></tr>
+      <tr><td>约束事项</td><td>详细描述违规内容和整改要求</td><td><span class="badge badge-req">必填</span></td></tr>
+      <tr><td>违规依据</td><td>下拉选择对应的违规依据条款</td><td><span class="badge badge-req">必填</span></td></tr>
+    </table>
+
+    <h3>3. 上传违规图片</h3>
+    <p>点击「违规图片」上传区域，选择现场拍摄的违规照片（支持 jpg、png 等常见格式）。图片将嵌入约束单中。</p>
+    <div class="tip">违规图片为必填项，导出前必须上传。</div>
+
+    <h3>4. 导出 / 打印</h3>
+    <p>所有必填项填写完整后，点击顶部按钮进行操作。如有缺失，系统会自动高亮红色并提示。</p>
+    <ul>
+      <li><strong>导出当前图片</strong>：将当前约束单导出为 PNG 图片</li>
+      <li><strong>批量导出图片</strong>：结合批量模板 CSV 文件，一次性生成多张约束单图片</li>
+      <li><strong>打印</strong>：直接调用浏览器打印功能输出纸质约束单</li>
+      <li><strong>清空</strong>：重置所有已填写的表单内容</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>批量导出说明</h2>
+    <p>点击「批量导出图片」按钮前，需准备一个 CSV 模板文件（参考 <code>批量模板_测试数据.csv</code>），包含多条记录，每条对应一张约束单。工具将逐条渲染并打包下载。</p>
+  </div>
+</div>
+</body>
+</html>

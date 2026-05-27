@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hz Tools</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f8f9fb;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+  }
+
+  .wrap { max-width: 720px; width: 100%; }
+
+  /* ── 头部 ── */
+  .brand {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 40px;
+  }
+  .brand-logo {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff; font-size: 20px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+  }
+  .brand-text h2 { font-size: 22px; font-weight: 700; color: #111; }
+  .brand-text p  { font-size: 13px; color: #888; margin-top: 2px; }
+
+  /* ── 卡片网格 ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 20px 22px;
+    text-decoration: none;
+    border: 1px solid #eef0f5;
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    display: flex; flex-direction: column; align-items: flex-start;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+    border-color: #dde0e8;
+  }
+
+  .card-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px; font-size: 20px;
+  }
+  .c1 .card-icon { background: #eef2ff; }
+  .c2 .card-icon { background: #fff7ed; }
+  .c3 .card-icon { background: #ecfdf5; }
+
+  .card-title { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+  .card-desc  { font-size: 12px; color: #999; line-height: 1.5; flex:1; }
+
+  /* ── 底部信息 ── */
+  .footer { margin-top: 36px; text-align: center; font-size: 12px; color: #bbb; }
+
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <div class="brand-logo">Hz</div>
+    <div class="brand-text">
+      <h2>工具箱</h2>
+      <p>能源结算相关工具集合</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <a class="card c1" href="1-约束单生成工具/index.html">
+      <div class="card-icon">📄</div>
+      <div class="card-title">约束单生成工具</div>
+      <div class="card-desc">批量生成约束单文档，支持图片导出与打印</div>
+    </a>
+    <a class="card c2" href="2-国网电费账单数据提取/index.html">
+      <div class="card-icon">⚡</div>
+      <div class="card-title">国网电费账单数据提取</div>
+      <div class="card-desc">上传PDF账单文件，自动提取数据导出Excel</div>
+    </a>
+    <a class="card c3" href="3-固定电价结算单批量生成/index.html">
+      <div class="card-icon">📊</div>
+      <div class="card-title">固定电价结算单生成</div>
+      <div class="card-desc">上传账单与电站信息，批量生成结算单PDF</div>
+    </a>
+  </div>
+
+  <div class="footer">Hz Tools @2026 By 古月云希</div>
+
+</div>
+</body>
+</html>

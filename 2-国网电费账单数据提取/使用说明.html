@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用说明 - 国网电费账单提取工具</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6fa; color: #333; line-height: 1.8; padding: 24px;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; }
+  .back { display: inline-block; color: #4a6cf7; text-decoration: none; font-size: 14px; margin-bottom: 20px; }
+  .back:hover { text-decoration: underline; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 28px; }
+  .card {
+    background: #fff; border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .card h2 { font-size: 18px; margin-bottom: 12px; color: #1a1a2e; }
+  .card h3 { font-size: 15px; margin: 16px 0 8px; color: #444; }
+  .card p { font-size: 14px; color: #555; margin-bottom: 8px; }
+  .card ul, .card ol { padding-left: 20px; font-size: 14px; color: #555; }
+  .card li { margin-bottom: 6px; }
+  .field-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .field-table th { background: #f0f2f5; padding: 10px 12px; text-align: left; font-weight: 600; }
+  .field-table td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+  .tip { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #92400e; margin: 12px 0; }
+  .info { background: #eff6ff; border-left: 3px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #1e40af; margin: 12px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 返回工具</a>
+  <h1>国网电费账单提取工具 - 使用说明</h1>
+  <p class="subtitle">上传国网 PDF 电费账单，自动提取结构化数据并导出 Excel</p>
+
+  <div class="card">
+    <h2>功能概述</h2>
+    <p>本工具用于处理国网（国家电网）出具的电费账单 PDF 文件，自动识别并提取关键字段数据，最终汇总导出为 Excel 表格，方便后续结算对账。</p>
+  </div>
+
+  <div class="card">
+    <h2>操作步骤</h2>
+    <h3>1. 上传 PDF 文件</h3>
+    <p>点击上传区域或拖拽 PDF 文件到虚线框内，支持同时上传多个 PDF 文件。每个文件将作为一条独立记录进行解析。</p>
+    <div class="info">支持的文件格式：PDF（国网电费账单）。测试数据目录中提供了各省份的样本文件供参考。</div>
+
+    <h3>2. 开始提取</h3>
+    <p>选择文件后，点击「开始提取」按钮。工具将逐页解析 PDF 内容，自动提取以下字段：</p>
+    <table class="field-table">
+      <tr><th>提取字段</th><th>说明</th></tr>
+      <tr><td>户号</td><td>用电户唯一编号</td></tr>
+      <tr><td>结算日期</td><td>账单对应的结算周期起止日期</td></tr>
+      <tr><td>发电量</td><td>光伏发电上网电量（kWh）</td></tr>
+      <tr><td>上网电量</td><td>实际上网电量读数</td></tr>
+      <tr><td>电表读数</td><td>正向/反向有功电表读数</td></tr>
+    </table>
+
+    <div class="tip">PDF 中可能出现乱码文本，工具内置了乱码检测和修复逻辑，能够自动还原中文内容。</div>
+
+    <h3>3. 查看结果 &amp; 导出 Excel</h3>
+    <p>提取完成后，每份文件下方会显示已提取到的字段列表。确认无误后，点击「导出 Excel」按钮将所有结果导出为表格文件。</p>
+  </div>
+
+  <div class="card">
+    <h2>注意事项</h2>
+    <ul>
+      <li>仅支持国网标准格式的电费账单 PDF，非标准格式可能提取失败或结果不完整</li>
+      <li>如果文件较大（多页），处理时间会相应增加，请耐心等待</li>
+      <li>提取结果以文件列表形式展示，字段名用绿色标签标注已成功提取的项</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
