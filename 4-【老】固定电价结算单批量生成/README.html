@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>固定电价结算单生成（老）— 使用说明</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f8f9fb; color: #333; line-height: 1.8; padding: 32px 20px 80px;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  .back { display: inline-block; margin-bottom: 24px; color: #1a73e8; text-decoration: none; font-size: 13px; }
+  .back:hover { text-decoration: underline; }
+  h1 { font-size: 22px; margin-bottom: 6px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 36px; }
+
+  .section {
+    background: #fff; border-radius: 12px; padding: 28px; margin-bottom: 20px;
+    border: 1px solid #eef0f5;
+  }
+  .section h2 { font-size: 17px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+  .section h3 { font-size: 14px; margin: 16px 0 8px; color: #555; }
+  .section p { font-size: 14px; margin-bottom: 8px; }
+  .section ul, .section ol { padding-left: 20px; font-size: 14px; }
+  .section li { margin-bottom: 6px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th, td { border: 1px solid #e0e0e0; padding: 8px 12px; text-align: left; }
+  th { background: #f5f6f8; font-weight: 600; }
+  td code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+  .note {
+    background: #fffbe6; border-radius: 8px; padding: 12px 16px;
+    font-size: 13px; color: #8a6d00; margin: 12px 0;
+  }
+  .tip {
+    background: #f0f9ff; border-radius: 8px; padding: 12px 16px;
+    font-size: 13px; color: #1e40af; margin: 12px 0;
+  }
+  .file-box {
+    background: #f8f9fb; border-radius: 8px; padding: 12px 16px;
+    font-size: 13px; font-family: "SF Mono", "Menlo", monospace; color: #555;
+    margin: 8px 0; white-space: pre-line;
+  }
+
+  .footer { margin-top: 36px; text-align: center; font-size: 12px; color: #bbb; }
+</style>
+<link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="../favicon/favicon.svg">
+<link rel="icon" type="image/png" sizes="96x96" href="../favicon/favicon-96x96.png">
+</head>
+<body>
+<div class="wrap">
+
+  <a href="index.html" class="back">← 返回工具</a>
+  <h1>固定电价结算单生成（老模板）— 使用说明</h1>
+  <p class="subtitle">更新日期：2026-05-28</p>
+
+  <!-- 概述 -->
+  <div class="section">
+    <h2>功能概述</h2>
+    <p>上传「电站基本信息」和「国网电费账单提取」两个 Excel 文件，按发电户号自动匹配数据，批量生成老模板样式的光伏电费结算单。支持单条/批量导出 Excel 和 PDF，内置 33 枚电子印章。</p>
+
+    <h3>与新版的主要区别</h3>
+    <ul>
+      <li><strong>模板样式：</strong>老模板含 13% 税率拆分（税额、不含税金额）、人民币大写金额</li>
+      <li><strong>印章：</strong>内置 33 枚电子印章，无需手动上传</li>
+      <li><strong>Excel 导出：</strong>包含「结算单」和「国网截图」两个工作表</li>
+      <li><strong>截图匹配：</strong>国网截图按账单文件名自动匹配</li>
+    </ul>
+  </div>
+
+  <!-- 准备文件 -->
+  <div class="section">
+    <h2>第一步：准备 Excel 文件</h2>
+
+    <h3>文件① 电站基本信息（.xlsx / .xls）</h3>
+    <p>包含电站属性、电价、印章、银行账户等信息。第一行为表头，从第二行开始为数据。</p>
+
+    <table>
+      <tr><th>列名</th><th>说明</th><th>示例</th></tr>
+      <tr><td><code>发电户号</code></td><td>国网发电户号（匹配关键字段）</td><td>3400116700746</td></tr>
+      <tr><td><code>项目公司</code></td><td>投资方/项目公司名称</td><td>恒臻能源发展（铜陵）有限公司</td></tr>
+      <tr><td><code>业主单位</code></td><td>用电方/承载企业名称</td><td>安徽旭鸿特氟科技有限公司</td></tr>
+      <tr><td><code>电站简称</code></td><td>项目简短名称</td><td>铜陵旭鸿特氟</td></tr>
+      <tr><td><code>地址</code></td><td>业主单位地址</td><td>铜陵义安区顺安镇明湖村</td></tr>
+      <tr><td><code>业主联系人及电话</code></td><td>业主方联系人信息</td><td>吴秀玲18105627206</td></tr>
+      <tr><td><code>收款单位账户信息</code></td><td>投资方银行账户（支持换行）</td><td>名称：xxx\n账号：xxx\n开户行：xxx</td></tr>
+      <tr><td><code>付款单位账户信息</code></td><td>业主方银行账户（支持换行）</td><td>名称：xxx\n账号：xxx</td></tr>
+      <tr><td><code>固定电价</code></td><td>协议电价（元/千瓦时）</td><td>0.60</td></tr>
+      <tr><td><code>印章图片</code></td><td>印章文件名（需与内置印章一致）</td><td>恒臻（铜陵）.png</td></tr>
+      <tr><td><code>编制人</code></td><td>结算单编制人</td><td>胡慧珍</td></tr>
+      <tr><td><code>审核人</code></td><td>结算单审核人</td><td>胡晓珍</td></tr>
+      <tr><td><code>投资方联系人</code></td><td>投资方联系人姓名</td><td>胡慧珍</td></tr>
+      <tr><td><code>投资方联系方式</code></td><td>投资方联系电话</td><td>18358808812</td></tr>
+    </table>
+
+    <div class="note">注意：列名需完全一致（包括中英文括号）。发电户号是数据匹配的关键字段，必须填写正确。</div>
+
+    <h3>文件② 国网电费账单提取（.xlsx / .xls）</h3>
+    <p>需包含「<strong>账单汇总</strong>」工作表。若没有该工作表，系统自动读取第一个工作表。</p>
+
+    <table>
+      <tr><th>列名</th><th>说明</th></tr>
+      <tr><td><code>发电户号</code></td><td>与电站基本信息匹配</td></tr>
+      <tr><td><code>账单周期</code></td><td>结算期间，如 2026-04-01 至 2026-04-30</td></tr>
+      <tr><td><code>发电量(千瓦时)</code></td><td>当月总发电量</td></tr>
+      <tr><td><code>上网电量(千瓦时)</code></td><td>当月上网电量</td></tr>
+      <tr><td><code>企业自用电量(千瓦时)</code></td><td>当月自用电量</td></tr>
+      <tr><td><code>文件名</code></td><td>对应国网截图文件名（用于匹配截图）</td></tr>
+    </table>
+  </div>
+
+  <!-- 操作步骤 -->
+  <div class="section">
+    <h2>第二步：上传与生成</h2>
+    <ol>
+      <li>点击或拖拽上传「电站基本信息」Excel</li>
+      <li>点击或拖拽上传「国网电费账单提取」Excel</li>
+      <li>（可选）上传国网截图文件夹 — 图片名需与账单数据中的「文件名」列一致</li>
+      <li>系统自动按发电户号匹配，列表展示所有结算单记录</li>
+      <li>逐条操作：<strong>预览</strong> / <strong>下载 Excel</strong> / <strong>下载 PDF</strong></li>
+      <li>批量操作：<strong>下载全部 Excel</strong> / <strong>一键打包 PDF (ZIP)</strong></li>
+    </ol>
+
+    <div class="tip">提示：所有文件上传均支持拖拽操作。印章已内置 33 枚，如提示缺少印章可补充上传。</div>
+  </div>
+
+  <!-- 结算单内容 -->
+  <div class="section">
+    <h2>结算单内容说明</h2>
+    <ul>
+      <li><strong>第1页</strong>：结算单主体
+        <ul>
+          <li>业主单位、地址、发电户号、联系人及电话</li>
+          <li>总发电量、总上网电量、总自用电量</li>
+          <li>自用电折后电价、折后电费</li>
+          <li>税率（13%）、税额、金额（不含税）、开票金额</li>
+          <li>金额合计（大写）</li>
+          <li>收款/付款单位账户信息</li>
+          <li>印章、编制人、审核人、编制日期</li>
+          <li>异议声明及联系方式</li>
+        </ul>
+      </li>
+      <li><strong>第2页</strong>：国网截图附件（如有匹配截图）</li>
+    </ul>
+
+    <h3>电费计算公式</h3>
+    <div class="file-box">自用电折后电费 = 自用电量 × 固定电价
+不含税金额 = 电费 ÷ 1.13
+税额 = 电费 - 不含税金额
+开票金额 = 自用电折后电费</div>
+  </div>
+
+  <!-- 截图匹配 -->
+  <div class="section">
+    <h2>国网截图匹配规则</h2>
+    <ol>
+      <li>账单 Excel 中「文件名」列记录对应的截图文件名（如 <code>0dfcd186ae046249c2886c3a27c976e0.jpg</code>）</li>
+      <li>上传截图文件夹后，系统按文件名（不含扩展名）进行匹配</li>
+      <li>匹配成功 → 截图显示在结算单第2页</li>
+      <li>匹配失败 → 工具栏显示「截图 X/Y」红色提示</li>
+    </ol>
+  </div>
+
+  <!-- 常见问题 -->
+  <div class="section">
+    <h2>常见问题</h2>
+
+    <h3>Q: 上传文件后匹配不到数据？</h3>
+    <p>检查两个 Excel 的「发电户号」列是否一致（数字格式需统一），打开浏览器控制台查看日志输出。</p>
+
+    <h3>Q: 印章不显示？</h3>
+    <p>检查电站 Excel 中「印章图片」列的文件名是否与内置印章文件名完全一致（如 <code>恒臻（铜陵）.png</code>）。内置 33 枚印章列表可在控制台日志查看。</p>
+
+    <h3>Q: PDF 一键打包很慢？</h3>
+    <p>批量 PDF 使用 scale:3 高清输出，记录数量越多耗时越长。如只需快速预览可逐条下载。</p>
+
+    <h3>Q: 下载的 Excel 中截图在哪？</h3>
+    <p>Excel 文件包含两个工作表：底部标签可切换「结算单」和「国网截图」。</p>
+  </div>
+
+  <div class="footer">Hz Tools @2026 By 古月云希</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>光伏电费结算单</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  body {
+    font-family: "SimSun", "宋体", serif;
+    /*font-family: 微软雅黑, "Microsoft YaHei", sans-serif;*/
+    font-size: 13px;
+    color: #000;
+    margin: 0;
+    padding: 0;
+  }
+  .container { max-width: 190mm; margin: 0 auto; }
+  h1 {
+    text-align: center;
+    font-size: 16px;
+    margin:  12px 0;
+    letter-spacing: 3px;
+  }
+
+  .mdate{
+    font-size: 11px;
+  }
+  .main-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6px 0;
+  }
+  .main-table th,
+  .main-table td {
+    border: 1px solid #666;
+    padding: 5px;
+    font-size: 12px;
+  }
+  .main-table .thead {
+    background-color: #D9E1F2;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .main-table td { vertical-align: middle; }
+  .text-center { text-align: center; }
+  .text-right  { text-align: right; }
+  .text-left   { text-align: left; }
+  .total-row {
+    font-weight: bold;
+    background-color: #F2F2F2;
+  }
+  .account-info {
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-line;
+  }
+
+  .gz-wrap{
+    position: relative;
+   
+
+  }
+
+    .gz-wrap p{
+       margin: 0;
+    padding: 0;
+
+    }
+
+    .gz-wrap span{
+      padding-right: 50px;
+    }
+
+     .gz-wrap span.last{
+      padding: 0 0  0 50px;
+     }
+
+   .note-wrap  p{
+    margin: 0;
+    padding: 0;
+   }
+
+  .note-wrap span{
+    padding-right: 50px;
+  }
+
+  .note-wrap span.last{
+    padding-right: 0;
+  }
+
+
+  .fj-wrap{
+    padding: 30px 0;
+
+  }
+
+  .fj-wrap h3{
+    font-size: 12px;
+    padding: 10px 0;
+  }
+
+
+
+</style>
+</head>
+<body>
+<div class="container">
+
+
+  <!-- 第一页 -->
+
+  <h1>光伏电费结算单</h1>
+  <div class="mdate">结算期间：2026-04-01 至 2026-04-30</div>
+
+  <table class="main-table">
+    <tr>
+      <td class="text-center" style="width: 16%;" ><strong>业主单位</strong></td>
+      <td style="width: 22%;">安徽旭鸿特氟科技有限公司</td>
+      <td class="text-center"  style="width: 14%;"><strong>地址</strong></td>
+      <td style="width:32%">铜陵义安区顺安镇明湖村</td>
+    </tr>
+    <tr>
+      <td class="text-center"><strong>发电户号</strong></td>
+      <td>3400116700746</td>
+      <td class="text-center"><strong>联系人及电话</strong></td>
+      <td>吴秀玲18105627206</td>
+    </tr>
+    <tr class="thead">
+      <td>计费项目</td>
+      <td>计费数量</td>
+      <td>单位</td>
+      <td>备注</td>
+    </tr>
+    <tr>
+      <td class="text-center">总发电量</td>
+      <td class="text-right">4295</td>
+      <td class="text-center">千瓦时</td>
+      <td>来自网上国网数据</td>
+    </tr>
+    <tr>
+      <td class="text-center">总上网结算电量</td>
+      <td class="text-right">1223</td>
+      <td class="text-center">千瓦时</td>
+      <td>来自网上国网数据</td>
+    </tr>
+    <tr>
+      <td class="text-center">总自用结算电量</td>
+      <td class="text-right">3072</td>
+      <td class="text-center">千瓦时</td>
+      <td>总发电量-总上网电量</td>
+    </tr>
+    <tr>
+      <td class="text-center">自用电折后电价</td>
+      <td class="text-right">0.00</td>
+      <td class="text-center">元</td>
+      <td>光伏电站能源管理协议价</td>
+    </tr>
+    <tr>
+      <td class="text-center"><strong>自用电折后电费</strong></td>
+      <td class="text-right"><strong>1,198.08</strong></td>
+      <td class="text-center"><strong>元</strong></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="text-center"><strong>税率</strong></td>
+      <td class="text-right"><strong>13</strong></td>
+      <td class="text-center"><strong>%</strong></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="text-center"><strong>税额</strong></td>
+      <td class="text-right"><strong>137.83</strong></td>
+      <td class="text-center"><strong>元</strong></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="text-center"><strong>金额（不含税）</strong></td>
+      <td class="text-right"><strong>1,060.25</strong></td>
+      <td class="text-center"><strong>元</strong></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="text-center"><strong>开票金额</strong></td>
+      <td class="text-right"><strong>1,198.08</strong></td>
+      <td class="text-center"><strong>元</strong></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="text-center"><strong>金额合计（大写）</strong></td>
+      <td class="text-left" colspan="3"><strong>壹仟壹佰玖拾捌元壹角</strong></td>
+    </tr>
+    <tr>
+      <td colspan="2" class="account-info" style="vertical-align:top;">
+        <span>收款单位账户信息：</span>
+        名户名：恒臻能源发展（铜陵）有限公司
+        开户行：中国工商银行股份有限公司铜陵五松支行
+        银行账号：1308028209200113574
+        行号：102367102824
+      </td>
+      <td colspan="2" class="account-info" style="vertical-align:top;">
+        <span>付款单位账户信息：</span>
+        名称：安徽华畅新型建材有限责任公司
+        开户行：中国建设银行股份有限公司铜陵建龙支行
+        账号：34001662208053003451
+      </td>
+    </tr>
+    <tr>
+      <td colspan="4" class="text-left">
+        <div class="gz-wrap">
+          <p style="height: 80px;">结算单校验（盖章）</p>
+          
+          <p><span>编制人：胡慧珍</span>    <span>审核人：胡晓珍</span>    <span class="last">编制日期：2026年5月27日</span></p>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="4" class="text-left">
+        <div class="note-wrap">
+          <p style="color:#F00;margin:0 0 30px 0;padding:0;">
+            我们将通过微信、邮件等渠道发送给贵司。本表一式两份，若对上述信息存在异议，请于收到本单据之日起 3 个工作日内，以书面形式向我司提出；逾期未提出的，视为同意按上述信息进行电费结算。
+          </p>
+          <p style="padding-bottom: 0;">
+            <span>联系人：胡慧珍</span>    <span>联系方式：18358808812</span>    <span class="last">联系地址：浙江省杭州市萧山区临浦镇联东U谷南部智造产业港2幢8楼</span>
+          </p>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+
+<!-- 第二页 -->
+
+  <div class="fj-wrap">
+    <h3>国网截图附件:</h3>
+    <div style="text-align: center;">
+    <img width="250" src="国网截图/0dfcd186ae046249c2886c3a27c976e0.jpg" alt="">
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
