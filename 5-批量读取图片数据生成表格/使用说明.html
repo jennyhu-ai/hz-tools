@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用说明 - 批量读取图片数据生成表格</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6fa; color: #333; line-height: 1.8; padding: 24px;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; }
+  .back { display: inline-block; color: #4a6cf7; text-decoration: none; font-size: 14px; margin-bottom: 20px; }
+  .back:hover { text-decoration: underline; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 28px; }
+  .card {
+    background: #fff; border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .card h2 { font-size: 18px; margin-bottom: 12px; color: #1a1a2e; }
+  .card h3 { font-size: 15px; margin: 16px 0 8px; color: #444; }
+  .card p { font-size: 14px; color: #555; margin-bottom: 8px; }
+  .card ul, .card ol { padding-left: 20px; font-size: 14px; color: #555; }
+  .card li { margin-bottom: 6px; }
+  .field-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .field-table th { background: #f0f2f5; padding: 10px 12px; text-align: left; font-weight: 600; }
+  .field-table td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+  .tip { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #92400e; margin: 12px 0; }
+  .info { background: #eff6ff; border-left: 3px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #1e40af; margin: 12px 0; }
+</style>
+  <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="../favicon/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="../favicon/favicon-96x96.png">
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 返回工具</a>
+  <h1>批量读取图片数据生成表格 - 使用说明</h1>
+  <p class="subtitle">上传国网电费账单截图，OCR 自动识别关键数据并导出 Excel</p>
+
+  <div class="card">
+    <h2>功能概述</h2>
+    <p>本工具用于批量处理国网（国家电网）电费账单的<strong>手机截图</strong>，通过 OCR 文字识别技术自动提取账单中的关键字段，汇总后导出为 Excel 表格，方便结算对账。</p>
+  </div>
+
+  <div class="card">
+    <h2>操作步骤</h2>
+    <h3>1. 上传图片</h3>
+    <p>点击上传区域或拖拽图片到虚线框内，支持 JPG / PNG / WebP 格式，可一次选择多张截图。</p>
+    <h3>2. 开始识别</h3>
+    <p>点击「开始识别」按钮，系统将逐张读取图片中的文字并提取数据。首次使用需下载中文语言包（约 10MB），后续自动缓存。</p>
+    <h3>3. 查看结果</h3>
+    <p>识别完成后，结果表格展示所有提取到的字段数据，底部显示汇总统计。</p>
+    <h3>4. 导出 Excel</h3>
+    <p>点击「下载 Excel」即可导出包含所有数据的表格文件。</p>
+  </div>
+
+  <div class="card">
+    <h2>识别字段说明</h2>
+    <table class="field-table">
+      <tr><th>字段</th><th>说明</th><th>图片来源对应标签</th></tr>
+      <tr><td>发电户号</td><td>10-20 位数字</td><td>发电户号 / 户号</td></tr>
+      <tr><td>账单周期</td><td>格式：YYYY-MM-DD 至 YYYY-MM-DD</td><td>账单周期</td></tr>
+      <tr><td>发电量</td><td>单位：千瓦时（kWh）</td><td>发电量（千瓦时）</td></tr>
+      <tr><td>上网电量</td><td>单位：千瓦时（kWh）</td><td>上网电量（千瓦时）</td></tr>
+      <tr><td>企业自用电量</td><td>自动计算：发电量 - 上网电量</td><td>—</td></tr>
+      <tr><td>上网电费</td><td>单位：元，即账单金额/合计收益</td><td>账单金额 / 合计收益</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>适用截图类型</h2>
+    <p>适用于国网 App（网上国网）中「电费账单」页面的手机截图，包含电量电费明细信息。</p>
+    <div class="tip">截图需清晰完整，避免模糊、反光或遮挡。建议使用原始分辨率截图，不要过度压缩。</div>
+  </div>
+
+  <div class="card">
+    <h2>常见问题</h2>
+    <h3>Q: 识别结果为空或不准确？</h3>
+    <p>点击文件名旁的「查看识别原文」可展开 OCR 原始输出文字，检查是否正确识别了中文字符。如关键字段缺失，可能是截图不清晰或格式不匹配。</p>
+    <h3>Q: 首次加载较慢？</h3>
+    <p>首次使用需从 CDN 下载 Tesseract 中文语言包（约 10MB），后续浏览器会缓存，加载速度会明显提升。</p>
+    <h3>Q: 支持哪些浏览器？</h3>
+    <p>推荐使用 Chrome / Edge 等现代浏览器，需支持 Web Worker 和 Canvas API。</p>
+  </div>
+
+  <div class="card">
+    <h2>技术说明</h2>
+    <p>OCR 引擎：Tesseract.js v5（chi_sim 中文识别）</p>
+    <p>Excel 导出：SheetJS（xlsx）</p>
+    <p>所有处理均在浏览器本地完成，图片不会上传到任何服务器。</p>
+  </div>
+</div>
+</body>
+</html>

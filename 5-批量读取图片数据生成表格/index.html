@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量读取图片数据生成表格</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "微软雅黑", sans-serif;
+  background: #f0f2f5; color: #333; min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, #1a56db, #1e40af);
+  color: #fff; padding: 24px 32px; text-align: center;
+}
+.header h1 { font-size: 22px; font-weight: 600; }
+.header p { font-size: 13px; margin-top: 6px; opacity: 0.85; }
+.container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+.card {
+  background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  padding: 24px; margin-bottom: 16px;
+}
+.upload-area {
+  border: 2px dashed #c4c4c4; border-radius: 8px; padding: 32px;
+  text-align: center; cursor: pointer; transition: all .2s;
+}
+.upload-area:hover, .upload-area.dragover {
+  border-color: #1a56db; background: #f0f4ff;
+}
+.upload-area .icon { font-size: 40px; margin-bottom: 8px; }
+.upload-area .text { font-size: 14px; color: #666; }
+.upload-area .hint { font-size: 12px; color: #999; margin-top: 4px; }
+.file-list { margin-top: 16px; max-height: 360px; overflow-y: auto; }
+.file-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border: 1px solid #e8e8e8; border-radius: 6px;
+  margin-bottom: 6px; font-size: 13px; gap: 8px;
+}
+.file-item .thumb {
+  width: 48px; height: 64px; border-radius: 4px; object-fit: cover;
+  flex-shrink: 0; border: 1px solid #eee; cursor: pointer;
+}
+.file-item .info { flex: 1; min-width: 0; }
+.file-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.file-item .meta { font-size: 11px; color: #999; margin-top: 2px; }
+.file-item .status { font-size: 12px; margin-left: 12px; white-space: nowrap; }
+.file-item .status.pending { color: #999; }
+.file-item .status.ok { color: #16a34a; }
+.file-item .status.error { color: #dc2626; }
+.file-item .status.processing { color: #1a56db; }
+.file-item .ocr-debug {
+  display: none; margin-top: 8px; padding: 8px 10px;
+  background: #f8f9fa; border-radius: 4px; font-size: 11px;
+  color: #555; white-space: pre-wrap; word-break: break-all;
+  max-height: 200px; overflow-y: auto; font-family: monospace;
+  border: 1px solid #e8e8e8;
+}
+.file-item .ocr-debug.show { display: block; }
+.file-item .debug-toggle {
+  font-size: 11px; color: #1a56db; cursor: pointer; margin-left: 8px;
+  user-select: none; white-space: nowrap;
+}
+.file-item .debug-toggle:hover { text-decoration: underline; }
+.btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.btn {
+  padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px;
+  font-weight: 500; cursor: pointer; transition: all .15s;
+}
+.btn-primary { background: #1a56db; color: #fff; }
+.btn-primary:hover { background: #1e40af; }
+.btn-primary:disabled { background: #93b4f5; cursor: not-allowed; }
+.btn-outline { background: #fff; color: #1a56db; border: 1px solid #1a56db; }
+.btn-outline:hover { background: #f0f4ff; }
+.btn-outline:disabled { color: #93b4f5; border-color: #93b4f5; cursor: not-allowed; }
+.progress-wrap { margin-top: 16px; display: none; }
+.progress-wrap.show { display: block; }
+.progress-bar {
+  width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;
+}
+.progress-bar .fill {
+  height: 100%; background: #1a56db; border-radius: 4px;
+  width: 0%; transition: width .3s;
+}
+.progress-text { font-size: 12px; color: #666; margin-top: 6px; text-align: center; }
+
+/* result table */
+.result-wrap { margin-top: 16px; display: none; }
+.result-wrap.show { display: block; }
+.result-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.result-table th, .result-table td {
+  padding: 8px 10px; border: 1px solid #e0e0e0; text-align: center;
+}
+.result-table th {
+  background: #4472C4; color: #fff; font-weight: 500;
+  position: sticky; top: 0;
+}
+.result-table tbody tr:hover { background: #f8f9ff; }
+.result-table .cell-empty { color: #ccc; }
+.table-scroll { max-height: 400px; overflow: auto; border: 1px solid #e0e0e0; border-radius: 6px; }
+
+.summary { margin-top: 12px; font-size: 13px; color: #666; display: none; }
+.summary.show { display: block; }
+
+/* image preview modal */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.75); z-index: 1000; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-overlay img {
+  max-width: 92vw; max-height: 92vh; border-radius: 8px; box-shadow: 0 4px 24px rgba(0,0,0,.3);
+  cursor: pointer;
+}
+#fileInput { display: none; }
+</style>
+  <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="../favicon/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="../favicon/favicon-96x96.png">
+</head>
+<body>
+
+<div class="header">
+  <a href="../index.html" style="float:left;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;">← 返回导航</a>
+  <a href="使用说明.html" style="float:right;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;">使用说明</a>
+  <h1>批量读取图片数据生成表格</h1>
+  <p>上传国网电费账单截图，自动识别发电户号、账单周期、发电量、上网电量、账单金额，并导出Excel</p>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div id="dropZone" class="upload-area">
+      <div class="icon">🖼️</div>
+      <div class="text">拖拽图片到此处，或点击选择</div>
+      <div class="hint">支持 JPG / PNG / WebP，可批量上传多张截图</div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+
+    <div id="fileList" class="file-list"></div>
+
+    <div class="btn-row">
+      <button id="btnProcess" class="btn btn-primary" disabled>开始识别</button>
+      <button id="btnClear" class="btn btn-outline" disabled>清空列表</button>
+      <button id="btnDownload" class="btn btn-outline" disabled>下载 Excel</button>
+    </div>
+
+    <div id="progressWrap" class="progress-wrap">
+      <div class="progress-bar"><div id="progressFill" class="fill"></div></div>
+      <div id="progressText" class="progress-text"></div>
+    </div>
+
+    <div id="resultWrap" class="result-wrap">
+      <div class="table-scroll">
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>序号</th>
+              <th>文件名</th>
+              <th>发电户号</th>
+              <th>账单周期</th>
+              <th>发电量(千瓦时)</th>
+              <th>上网电量(千瓦时)</th>
+              <th>企业自用电量(千瓦时)</th>
+              <th>上网电费(元)</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="summary" class="summary"></div>
+  </div>
+</div>
+
+<div id="imageModal" class="modal-overlay" onclick="closeModal()">
+  <img id="modalImage" src="" alt="预览">
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+// ===== DOM refs =====
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const btnProcess = document.getElementById('btnProcess');
+const btnClear = document.getElementById('btnClear');
+const btnDownload = document.getElementById('btnDownload');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const resultWrap = document.getElementById('resultWrap');
+const resultBody = document.getElementById('resultBody');
+const summary = document.getElementById('summary');
+const imageModal = document.getElementById('imageModal');
+const modalImage = document.getElementById('modalImage');
+
+// ===== State =====
+let files = [];              // { file, id, status, thumbUrl }
+let allResults = [];         // parsed results
+let worker = null;
+
+// ===== File handling =====
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  addFiles(e.dataTransfer.files);
+});
+
+function addFiles(fileListInput) {
+  const imageFiles = [...fileListInput].filter(f => f.type.startsWith('image/'));
+  if (imageFiles.length === 0) return;
+
+  for (const f of imageFiles) {
+    const id = String(Date.now()) + '_' + Math.random().toString(36).slice(2, 8);
+    const thumbUrl = URL.createObjectURL(f);
+    files.push({ file: f, id, status: 'pending', thumbUrl });
+  }
+  renderFileList();
+  fileInput.value = '';
+}
+
+function removeFile(id) {
+  const item = files.find(f => f.id === id);
+  if (!item) return;
+  if (item.thumbUrl) URL.revokeObjectURL(item.thumbUrl);
+
+  // Also remove corresponding result from allResults
+  allResults = allResults.filter(r => r.filename !== item.file.name);
+
+  files = files.filter(f => f.id !== id);
+  renderFileList();
+  renderResults();
+}
+
+function clearAll() {
+  for (const f of files) {
+    if (f.thumbUrl) URL.revokeObjectURL(f.thumbUrl);
+  }
+  files = [];
+  allResults = [];
+  renderFileList();
+  resultWrap.classList.remove('show');
+  summary.classList.remove('show');
+  btnDownload.disabled = true;
+}
+
+function renderFileList() {
+  fileList.innerHTML = files.map(f => {
+    const statusClass = f.status;
+    const statusText = { pending: '待识别', processing: '识别中…', ok: '已识别', error: '识别失败' }[f.status];
+    const showDebug = f.ocrText && (f.status === 'ok' || f.status === 'error');
+    const escapedOcr = f.ocrText ? escHtml(f.ocrText.substring(0, 1500)) : '';
+    const errMsg = f.errorMsg ? `<div style="color:#dc2626;font-size:11px;margin-top:4px;">${escHtml(f.errorMsg)}</div>` : '';
+    return `
+      <div class="file-item" style="flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+          <img class="thumb" src="${f.thumbUrl}" alt="" onclick="previewImage('${f.thumbUrl}')" title="点击预览">
+          <div class="info">
+            <div class="name">${escHtml(f.file.name)}</div>
+            <div class="meta">${formatSize(f.file.size)}</div>
+          </div>
+          <span class="status ${statusClass}">${statusText}</span>
+          ${showDebug ? `<span class="debug-toggle" onclick="toggleDebug('${f.id}')">查看识别原文</span>` : ''}
+        </div>
+        ${showDebug ? `<div class="ocr-debug" id="debug-${f.id}">${escapedOcr}${errMsg}</div>` : ''}
+        <button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="removeFile('${f.id}')">删除</button>
+      </div>
+    `;
+  }).join('');
+
+  const hasFiles = files.length > 0;
+  btnProcess.disabled = !hasFiles;
+  btnClear.disabled = !hasFiles;
+}
+
+function previewImage(url) {
+  modalImage.src = url;
+  imageModal.classList.add('show');
+}
+
+function closeModal() {
+  imageModal.classList.remove('show');
+}
+imageModal.addEventListener('click', function(e) {
+  if (e.target === imageModal) closeModal();
+});
+
+function toggleDebug(id) {
+  const el = document.getElementById('debug-' + id);
+  if (el) el.classList.toggle('show');
+}
+
+// ===== OCR preprocessing: resize + enhance contrast =====
+function preprocessImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 2400;
+      let w = img.width, h = img.height;
+      if (Math.max(w, h) > MAX) {
+        const ratio = MAX / Math.max(w, h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // Mild contrast enhancement for better OCR
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        const enhanced = Math.min(255, Math.max(0, (gray - 30) * 1.3));
+        data[i] = data[i + 1] = data[i + 2] = enhanced;
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      canvas.toBlob((blob) => {
+        resolve(blob);
+      }, 'image/png');
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ===== OCR =====
+async function initWorker() {
+  if (worker) return;
+  worker = await Tesseract.createWorker('chi_sim+eng', 1, {
+    logger: (m) => {
+      if (m.status === 'recognizing text') {
+        const pct = Math.round(m.progress * 100);
+        progressFill.style.width = pct + '%';
+        progressText.textContent = `正在识别文字… ${pct}%`;
+      }
+    }
+  });
+}
+
+async function ocrImage(file) {
+  await initWorker();
+  const blob = await preprocessImage(file);
+  const { data: { text } } = await worker.recognize(blob);
+  return text;
+}
+
+// ===== Text normalization =====
+function normalizeText(text) {
+  let t = text.replace(/[ \t]+/g, ' ');
+  t = t.replace(/\n{3,}/g, '\n\n');
+  t = t.replace(/([一-鿿㐀-䶿豈-﫿])\s+([一-鿿㐀-䶿豈-﫿])/g, '$1$2');
+  return t.trim();
+}
+
+// ===== Field parsers =====
+function parseAccountNumber(text) {
+  const flat = text.replace(/\s+/g, '');
+  const patterns = [
+    /发电户号[：:\s]*(\d{10,20})/,
+    /户号[：:\s]*(\d{10,20})/,
+    /发电户[：:\s]*(\d{10,20})/,
+  ];
+  for (const re of patterns) {
+    const m = flat.match(re);
+    if (m) return m[1];
+  }
+  const idx = flat.indexOf('发电');
+  if (idx >= 0) {
+    const context = flat.substring(Math.max(0, idx - 20), idx + 60);
+    const numMatch = context.match(/(\d{10,20})/);
+    if (numMatch) return numMatch[1];
+  }
+  return '';
+}
+
+function parseBillingPeriod(text) {
+  const flat = text.replace(/\s+/g, ' ');
+  let markerIdx = flat.indexOf('账单周期');
+  if (markerIdx < 0) markerIdx = flat.indexOf('账单');
+  if (markerIdx < 0) markerIdx = flat.indexOf('电费账单');
+
+  const context = markerIdx >= 0
+    ? flat.substring(markerIdx, markerIdx + 400)
+    : flat.substring(0, 600);
+
+  const datePatterns = [
+    /(\d{4}[-./]\d{1,2}[-./]\d{1,2})/g,
+    /(\d{4}年\d{1,2}月\d{1,2}日)/g,
+    /(\d{4}\.\d{1,2}\.\d{1,2})/g,
+  ];
+
+  let allDates = [];
+  for (const pattern of datePatterns) {
+    const matches = [...context.matchAll(pattern)];
+    for (const m of matches) {
+      let d = m[1];
+      d = d.replace(/[年.]/g, '-').replace(/[月]/g, '-').replace(/日/g, '').replace(/\//g, '-');
+      allDates.push(d);
+    }
+  }
+
+  if (allDates.length >= 2) {
+    const valid = allDates.filter(d => d >= '2020-01-01' && d <= '2035-12-31');
+    if (valid.length >= 2) return `${valid[0]} 至 ${valid[1]}`;
+    return `${allDates[0]} 至 ${allDates[1]}`;
+  }
+
+  for (const pattern of datePatterns) {
+    const all = [...flat.matchAll(pattern)];
+    if (all.length >= 2) {
+      let d1 = all[0][1], d2 = all[1][1];
+      d1 = d1.replace(/[年.]/g, '-').replace(/[月]/g, '-').replace(/日/g, '').replace(/\//g, '-');
+      d2 = d2.replace(/[年.]/g, '-').replace(/[月]/g, '-').replace(/日/g, '').replace(/\//g, '-');
+      return `${d1} 至 ${d2}`;
+    }
+  }
+
+  return '';
+}
+
+// Helper: extract number near a keyword, with fuzzy matching for OCR noise
+function findNumberNear(text, keyword, opts = {}) {
+  const { maxDist = 200, unitPats = [], minVal, maxVal } = opts;
+  const flat = text.replace(/\s+/g, '');
+
+  let idx = -1;
+  const exactIdx = flat.indexOf(keyword);
+  if (exactIdx >= 0) {
+    idx = exactIdx;
+  } else {
+    const fuzzyRe = new RegExp(keyword.split('').join('.{0,2}'));
+    const m = flat.match(fuzzyRe);
+    if (m) idx = m.index;
+  }
+
+  console.log(`  findNumberNear("${keyword}"): idx=${idx}${idx >= 0 ? ', ctx="' + flat.substring(idx, Math.min(idx + 60, flat.length)) + '"' : ''}`);
+
+  if (idx < 0) return '';
+  const ctx = flat.substring(idx, Math.min(idx + maxDist, flat.length));
+
+  for (const unitRe of unitPats) {
+    const fullRe = new RegExp(`([\\d,.]+)\\s*${unitRe}`, 'i');
+    const m = ctx.match(fullRe);
+    if (m) {
+      const val = parseFloat(m[1].replace(/,/g, ''));
+      console.log(`    unit match: "${m[0]}", val=${val}`);
+      if (!isNaN(val) && val > 0) {
+        if (minVal !== undefined && val < minVal) continue;
+        if (maxVal !== undefined && val > maxVal) continue;
+        return m[1].replace(/,/g, '');
+      }
+    }
+  }
+
+  // Fallback: any decimal number (3-7 integer digits, 1-2 decimal places)
+  const numM = ctx.match(/(\d{3,7}\.\d{1,2})/);
+  if (numM) {
+    const val = parseFloat(numM[1]);
+    console.log(`    decimal fallback: "${numM[1]}", val=${val}`);
+    if (!isNaN(val) && val > 0) {
+      if (minVal !== undefined && val < minVal) return '';
+      if (maxVal !== undefined && val > maxVal) return '';
+      return numM[1];
+    }
+  }
+  return '';
+}
+
+// Joint parser for 发电量/上网电量
+// Bill format: "发电量（千瓦时）12345.67" — unit is IN the label, number comes AFTER
+function parseGenerationAndGrid(text) {
+  const flat = text.replace(/\s+/g, '');
+
+  const genPatterns = [
+    /发电量[（(]?\s*千\s*瓦\s*时\s*[）)]?\s*([\d,.]+)/,
+    /发电量[（(]?.{0,4}[）)]?\s*([\d,.]+)/,
+    /发电量[^上]*?([\d]{3,7}\.[\d]{1,2})/,
+  ];
+  const gridPatterns = [
+    /上网电量[（(]?\s*千\s*瓦\s*时\s*[）)]?\s*([\d,.]+)/,
+    /上网电量[（(]?.{0,4}[）)]?\s*([\d,.]+)/,
+    /上网电量[^发]*?([\d]{3,7}\.[\d]{1,2})/,
+  ];
+
+  let gen = '', grid = '';
+
+  for (const re of genPatterns) {
+    const m = flat.match(re);
+    if (m) {
+      const val = parseFloat(m[1].replace(/,/g, ''));
+      if (!isNaN(val) && val > 0 && val < 99999999) {
+        gen = m[1].replace(/,/g, '');
+        console.log(`  gen matched: value=${gen}`);
+        break;
+      }
+    }
+  }
+
+  for (const re of gridPatterns) {
+    const m = flat.match(re);
+    if (m) {
+      const val = parseFloat(m[1].replace(/,/g, ''));
+      if (!isNaN(val) && val > 0 && val < 99999999) {
+        grid = m[1].replace(/,/g, '');
+        console.log(`  grid matched: value=${grid}`);
+        break;
+      }
+    }
+  }
+
+  // Fallback: find all decimal numbers, larger=gen, smaller=grid
+  if (!gen || !grid) {
+    const allNums = [...flat.matchAll(/(\d{3,7}\.\d{1,2})/g)]
+      .map(m => ({ str: m[1], val: parseFloat(m[1]), idx: m.index }))
+      .filter(n => n.val > 0);
+
+    const tableIdx = Math.max(
+      flat.indexOf('正向有功'), flat.indexOf('反向有功'),
+      flat.indexOf('电能表'), flat.indexOf('示数')
+    );
+    const relevantNums = tableIdx > 0
+      ? allNums.filter(n => n.idx < tableIdx)
+      : allNums;
+
+    console.log(`  fallback: allNums=${JSON.stringify(allNums.map(n => n.str))}, relevant=${JSON.stringify(relevantNums.map(n => n.str))}`);
+
+    if (!gen && !grid && relevantNums.length >= 2) {
+      const sorted = [...relevantNums].sort((a, b) => b.val - a.val);
+      gen = sorted[0].str;
+      grid = sorted[1].str;
+      console.log(`  size-based fallback: gen=${gen}, grid=${grid}`);
+    } else if (!gen && relevantNums.length >= 1) {
+      const genPos = flat.indexOf('发电量');
+      const gridPos = flat.indexOf('上网电量');
+      for (const n of relevantNums) {
+        if (genPos >= 0 && Math.abs(n.idx - genPos) < 200 && !gen) gen = n.str;
+        if (gridPos >= 0 && Math.abs(n.idx - gridPos) < 200 && !grid) grid = n.str;
+      }
+    }
+  }
+
+  return { gen, grid };
+}
+
+function parseAmount(text) {
+  const flat = text.replace(/\s+/g, '');
+
+  // Strategy 1: "账单金额" / "合计收益" — exact field labels on the bill
+  for (const kw of ['账单金额', '合计收益']) {
+    result = findNumberNear(text, kw, {
+      unitPats: ['元', '圆'],
+      minVal: 0.01, maxVal: 99999999
+    });
+    if (result) return result;
+  }
+
+  // Strategy 2: "金额" — generic total indicator
+  result = findNumberNear(text, '金额', {
+    unitPats: ['元', '圆'],
+    minVal: 0.01, maxVal: 99999999
+  });
+  if (result) return result;
+
+  // Strategy 3: "上网电费" / "合计" / "应付" — backup total indicators
+  for (const kw of ['上网电费', '合计', '应付', '应收', '结算金额', '应付电费']) {
+    result = findNumberNear(text, kw, {
+      unitPats: ['元', '圆'],
+      minVal: 0.01, maxVal: 99999999
+    });
+    if (result) return result;
+  }
+
+  // Strategy 3: find ALL "X元" values, return the largest (total > any component charge)
+  const allYuan = [...flat.matchAll(/([\d,.]+)\s*[元圆]/g)]
+    .map(m => ({ str: m[1].replace(/,/g, ''), val: parseFloat(m[1].replace(/,/g, '')) }))
+    .filter(x => !isNaN(x.val) && x.val > 0);
+
+  console.log(`  amount: all yuan values = ${JSON.stringify(allYuan.map(x => x.val))}`);
+
+  if (allYuan.length > 0) {
+    // Sort descending, pick the largest value
+    allYuan.sort((a, b) => b.val - a.val);
+    console.log(`  amount: selected largest = ${allYuan[0].str}`);
+    return allYuan[0].str;
+  }
+
+  return '';
+}
+
+// ===== Process single file =====
+async function processFile(fileItem) {
+  fileItem.status = 'processing';
+  renderFileList();
+
+  try {
+    const rawText = await ocrImage(fileItem.file);
+    fileItem.ocrText = rawText;
+    const normalized = normalizeText(rawText);
+    console.log(`=== ${fileItem.file.name} OCR text (first 600 chars) ===`);
+    console.log(normalized.substring(0, 600));
+    console.log('=== end preview ===');
+
+    const accountNumber = parseAccountNumber(normalized);
+    const billingPeriod = parseBillingPeriod(normalized);
+    const { gen: generationKwh, grid: gridConnectedKwh } = parseGenerationAndGrid(normalized);
+    const amount = parseAmount(normalized);
+
+    console.log(`  -> 户号:${accountNumber} 周期:${billingPeriod} 发电:${generationKwh} 上网:${gridConnectedKwh} 金额:${amount}`);
+
+    if (!accountNumber && !billingPeriod && !generationKwh && !gridConnectedKwh && !amount) {
+      throw new Error('未能识别出任何字段，请确认图片是否为国网电费账单截图');
+    }
+
+    fileItem.status = 'ok';
+    return {
+      filename: fileItem.file.name,
+      accountNumber,
+      billingPeriod,
+      generationKwh,
+      gridConnectedKwh,
+      amount,
+    };
+  } catch (err) {
+    fileItem.status = 'error';
+    fileItem.errorMsg = err.message;
+    console.error(`Error processing ${fileItem.file.name}:`, err);
+    return null;
+  } finally {
+    renderFileList();
+  }
+}
+
+// ===== Batch process =====
+btnProcess.addEventListener('click', async () => {
+  const pending = files.filter(f => f.status === 'pending');
+  if (pending.length === 0) return;
+
+  btnProcess.disabled = true;
+  progressWrap.classList.add('show');
+  resultWrap.classList.remove('show');
+  summary.classList.remove('show');
+
+  allResults = [];
+  let completed = 0;
+  const total = pending.length;
+
+  for (const fileItem of pending) {
+    progressFill.style.width = ((completed / total) * 100) + '%';
+    progressText.textContent = `处理中 ${completed + 1} / ${total}：${fileItem.file.name}`;
+
+    const result = await processFile(fileItem);
+    if (result) allResults.push(result);
+    completed++;
+  }
+
+  progressFill.style.width = '100%';
+  progressText.textContent = `完成！共处理 ${total} 张图片，成功 ${allResults.length} 张`;
+
+  btnProcess.disabled = false;
+  renderResults();
+});
+
+function renderResults() {
+  if (allResults.length === 0) {
+    resultWrap.classList.remove('show');
+    summary.classList.remove('show');
+    btnDownload.disabled = true;
+    return;
+  }
+
+  resultBody.innerHTML = allResults.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td style="text-align:left;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.filename)}">${escHtml(r.filename)}</td>
+      <td>${r.accountNumber || '<span class="cell-empty">-</span>'}</td>
+      <td>${r.billingPeriod || '<span class="cell-empty">-</span>'}</td>
+      <td>${r.generationKwh || '<span class="cell-empty">-</span>'}</td>
+      <td>${r.gridConnectedKwh || '<span class="cell-empty">-</span>'}</td>
+      <td>${(() => {
+        const gen = parseFloat(r.generationKwh);
+        const grid = parseFloat(r.gridConnectedKwh);
+        if (gen > 0 || grid > 0) return Math.round(Math.max(0, gen - grid));
+        return '<span class="cell-empty">-</span>';
+      })()}</td>
+      <td>${r.amount || '<span class="cell-empty">-</span>'}</td>
+    </tr>
+  `).join('');
+
+  resultWrap.classList.add('show');
+
+  const hasMissing = allResults.some(r => !r.accountNumber || !r.billingPeriod || !r.generationKwh || !r.gridConnectedKwh || !r.amount);
+  const totalGen = allResults.reduce((sum, r) => sum + (parseFloat(r.generationKwh) || 0), 0);
+  const totalGrid = allResults.reduce((sum, r) => sum + (parseFloat(r.gridConnectedKwh) || 0), 0);
+  const totalSelfUse = Math.round(Math.max(0, totalGen - totalGrid));
+  const totalAmount = allResults.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+
+  summary.innerHTML = `
+    共识别 <b>${allResults.length}</b> 条记录 &nbsp;|&nbsp;
+    发电量合计：<b>${totalGen.toFixed(2)}</b> kWh &nbsp;|&nbsp;
+    上网电量合计：<b>${totalGrid.toFixed(2)}</b> kWh &nbsp;|&nbsp;
+    企业自用电量合计：<b>${totalSelfUse}</b> kWh &nbsp;|&nbsp;
+    金额合计：<b>${totalAmount.toFixed(2)}</b> 元
+    ${hasMissing ? '<br><span style="color:#dc2626;">注意：部分字段未能识别，请检查标注为 "-" 的单元格</span>' : ''}
+  `;
+  summary.classList.add('show');
+  btnDownload.disabled = false;
+}
+
+// ===== Excel export =====
+btnDownload.addEventListener('click', () => {
+  if (allResults.length === 0) return;
+
+  const rows = allResults.map((r, i) => ({
+    '序号': i + 1,
+    '文件名': r.filename,
+    '发电户号': r.accountNumber,
+    '账单周期': r.billingPeriod,
+    '发电量(千瓦时)': r.generationKwh ? parseFloat(r.generationKwh) : '',
+    '上网电量(千瓦时)': r.gridConnectedKwh ? parseFloat(r.gridConnectedKwh) : '',
+    '企业自用电量(千瓦时)': (() => {
+      const gen = parseFloat(r.generationKwh) || 0;
+      const grid = parseFloat(r.gridConnectedKwh) || 0;
+      return gen && grid ? Math.round(Math.max(0, gen - grid)) : '';
+    })(),
+    '账单金额(元)': r.amount ? parseFloat(r.amount) : '',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  ws['!cols'] = [
+    { wch: 6 }, { wch: 36 }, { wch: 24 }, { wch: 26 },
+    { wch: 16 }, { wch: 16 }, { wch: 18 }, { wch: 14 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '账单数据');
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+  XLSX.writeFile(wb, `国网账单数据导出_${ts}.xlsx`);
+});
+
+// ===== Clear =====
+btnClear.addEventListener('click', clearAll);
+
+// ===== Helpers =====
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ===== Cleanup on page unload =====
+window.addEventListener('beforeunload', () => {
+  if (worker) worker.terminate();
+  for (const f of files) {
+    if (f.thumbUrl) URL.revokeObjectURL(f.thumbUrl);
+  }
+});
+</script>
+</body>
+</html>

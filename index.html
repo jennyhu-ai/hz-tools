@@ -35,7 +35,7 @@
   /* ── 卡片网格 ── */
   .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
 
@@ -62,6 +62,7 @@
   .c1 .card-icon { background: #eef2ff; }
   .c2 .card-icon { background: #fff7ed; }
   .c3 .card-icon { background: #ecfdf5; }
+  .c4 .card-icon { background: #fdf2f8; }
 
   .card-title { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
   .card-desc  { font-size: 12px; color: #999; line-height: 1.5; flex:1; }
@@ -84,7 +85,7 @@
     <div class="brand-logo"><img src="favicon/favicon-96x96.png" alt="Hz" width="34" height="34"></div>
     <div class="brand-text">
       <h2>工具箱</h2>
-      <p>能源结算相关工具集合</p>
+      <p>能源结算相关工具集合，支持图片/PDF 批量处理</p>
     </div>
   </div>
 
@@ -103,6 +104,11 @@
       <div class="card-icon">📊</div>
       <div class="card-title">固定电价结算单生成</div>
       <div class="card-desc">上传账单与电站信息，批量生成结算单PDF</div>
+    </a>
+    <a class="card c4" href="5-批量读取图片数据生成表格/index.html">
+      <div class="card-icon">🖼️</div>
+      <div class="card-title">批量读取图片数据生成表格</div>
+      <div class="card-desc">上传国网账单截图，OCR识别数据并导出Excel</div>
     </a>
   </div>
 
