@@ -163,7 +163,7 @@ body {
               <th>发电量(千瓦时)</th>
               <th>上网电量(千瓦时)</th>
               <th>企业自用电量(千瓦时)</th>
-              <th>上网电费(元)</th>
+              <th>国网电费（元）</th>
             </tr>
           </thead>
           <tbody id="resultBody"></tbody>
@@ -261,7 +261,7 @@ function clearAll() {
 function renderFileList() {
   fileList.innerHTML = files.map(f => {
     const statusClass = f.status;
-    const statusText = { pending: '待识别', processing: '识别中…', ok: '已识别', error: '识别失败' }[f.status];
+    const statusText = { pending: '待识别', processing: '识别中…', ok: '已识别', error: '识别失败' }[f.status] || '未知';
     const showDebug = f.ocrText && (f.status === 'ok' || f.status === 'error');
     const escapedOcr = f.ocrText ? escHtml(f.ocrText.substring(0, 1500)) : '';
     const errMsg = f.errorMsg ? `<div style="color:#dc2626;font-size:11px;margin-top:4px;">${escHtml(f.errorMsg)}</div>` : '';
@@ -304,13 +304,18 @@ function toggleDebug(id) {
   if (el) el.classList.toggle('show');
 }
 
-// ===== OCR preprocessing: resize + enhance contrast =====
+// ===== OCR preprocessing: resize only =====
+// Keep it simple: only resize to max 2400px and convert to PNG.
+// Tesseract.js internal preprocessing handles the rest better than
+// any manual pixel manipulation (OTSU/contrast/etc all made it worse).
 function preprocessImage(file) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const MAX = 2400;
-      let w = img.width, h = img.height;
+      const MAX = 3000; // Higher resolution = better OCR for small text
+      let w = img.naturalWidth || img.width;
+      let h = img.naturalHeight || img.height;
+
       if (Math.max(w, h) > MAX) {
         const ratio = MAX / Math.max(w, h);
         w = Math.round(w * ratio);
@@ -321,22 +326,19 @@ function preprocessImage(file) {
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
-
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, w, h);
 
-      // Mild contrast enhancement for better OCR
-      const imageData = ctx.getImageData(0, 0, w, h);
-      const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-        const enhanced = Math.min(255, Math.max(0, (gray - 30) * 1.3));
-        data[i] = data[i + 1] = data[i + 2] = enhanced;
-      }
-      ctx.putImageData(imageData, 0, 0);
-
       canvas.toBlob((blob) => {
-        resolve(blob);
+        URL.revokeObjectURL(img.src);
+        if (blob) resolve(blob);
+        else reject(new Error('Canvas 转换图片失败'));
       }, 'image/png');
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error('图片加载失败，文件可能已损坏'));
     };
     img.src = URL.createObjectURL(file);
   });
@@ -345,7 +347,8 @@ function preprocessImage(file) {
 // ===== OCR =====
 async function initWorker() {
   if (worker) return;
-  worker = await Tesseract.createWorker('chi_sim+eng', 1, {
+  // OEM 3 = LSTM + legacy engine (more accurate than LSTM-only OEM 1)
+  worker = await Tesseract.createWorker('chi_sim+eng', 3, {
     logger: (m) => {
       if (m.status === 'recognizing text') {
         const pct = Math.round(m.progress * 100);
@@ -359,13 +362,22 @@ async function initWorker() {
 async function ocrImage(file) {
   await initWorker();
   const blob = await preprocessImage(file);
-  const { data: { text } } = await worker.recognize(blob);
+  // PSM 3 = Fully automatic page segmentation (most reliable for bills)
+  const { data: { text } } = await worker.recognize(blob, {
+    tessedit_pageseg_mode: Tesseract.PSM ? Tesseract.PSM.AUTO : 3,
+  });
   return text;
 }
 
 // ===== Text normalization =====
 function normalizeText(text) {
-  let t = text.replace(/[ \t]+/g, ' ');
+  // Fix common OCR misreads before normalization
+  // e.g. "2%" where "4" was misread as "%" → "24"
+  let t = text
+    .replace(/(\d)%/g, '$14')   // "2%" → "24" (% misread as 4)
+    .replace(/(\d)@/g, '$10')   // "3@" → "30" (@ misread as 0)
+    .replace(/(\d)\$/g, '$18'); // "1$" → "18" ($ misread as 8)
+  t = t.replace(/[ \t]+/g, ' ');
   t = t.replace(/\n{3,}/g, '\n\n');
   t = t.replace(/([一-鿿㐀-䶿豈-﫿])\s+([一-鿿㐀-䶿豈-﫿])/g, '$1$2');
   return t.trim();
@@ -414,6 +426,11 @@ function parseBillingPeriod(text) {
     for (const m of matches) {
       let d = m[1];
       d = d.replace(/[年.]/g, '-').replace(/[月]/g, '-').replace(/日/g, '').replace(/\//g, '-');
+      // Normalize to YYYY-MM-DD format (zero-pad month and day)
+      const parts = d.split('-');
+      if (parts.length === 3) {
+        d = parts[0] + '-' + parts[1].padStart(2, '0') + '-' + parts[2].padStart(2, '0');
+      }
       allDates.push(d);
     }
   }
@@ -486,75 +503,225 @@ function findNumberNear(text, keyword, opts = {}) {
 }
 
 // Joint parser for 发电量/上网电量
-// Bill format: "发电量（千瓦时）12345.67" — unit is IN the label, number comes AFTER
+// Strategy: find label positions (with fuzzy OCR tolerance), then pick the
+// nearest number after each label. Much more robust than pure regex patterns
+// because it doesn't depend on exact label-number formatting.
 function parseGenerationAndGrid(text) {
-  const flat = text.replace(/\s+/g, '');
+  // Replace newlines with pipe delimiter BEFORE removing whitespace,
+  // to prevent values on separate lines from concatenating.
+  // e.g. "89463\n79640" -> "89463|79640" instead of "8946379640"
+  const flat = text.replace(/[\r\n]+/g, '|').replace(/[ \t]+/g, '');
 
-  const genPatterns = [
-    /发电量[（(]?\s*千\s*瓦\s*时\s*[）)]?\s*([\d,.]+)/,
-    /发电量[（(]?.{0,4}[）)]?\s*([\d,.]+)/,
-    /发电量[^上]*?([\d]{3,7}\.[\d]{1,2})/,
-  ];
-  const gridPatterns = [
-    /上网电量[（(]?\s*千\s*瓦\s*时\s*[）)]?\s*([\d,.]+)/,
-    /上网电量[（(]?.{0,4}[）)]?\s*([\d,.]+)/,
-    /上网电量[^发]*?([\d]{3,7}\.[\d]{1,2})/,
-  ];
+  // ---- helpers ----
+
+  // Fuzzy indexOf: allows up to 1 extra/missing char between each label char
+  function fuzzyIndexOf(str, label) {
+    const exact = str.indexOf(label);
+    if (exact >= 0) return exact;
+    // Allow 0-1 chars between each character of the label
+    const re = new RegExp(label.split('').join('.{0,1}'));
+    const m = str.match(re);
+    return m ? m.index : -1;
+  }
+
+  // Find candidate numbers near a position.
+  // Handles: 12345.67 | 12,345.67 | 12345 | 1234567 (OCR missing decimal)
+  function findNumbersNear(pos, maxDist) {
+    if (pos < 0) return [];
+    const ctx = flat.substring(pos, Math.min(pos + maxDist, flat.length));
+    const candidates = [];
+    const re = /[\d,.]{1,15}/g;
+    let m;
+    while ((m = re.exec(ctx)) !== null) {
+      const raw = m[0];
+      const cleaned = raw.replace(/,/g, '');
+      let val = parseFloat(cleaned);
+      let str = cleaned;
+      // If no decimal, try inserting one 2 places from end (OCR dropped it)
+      if (cleaned.length >= 5 && cleaned.length <= 9 && !cleaned.includes('.')) {
+        const withDot = cleaned.slice(0, -2) + '.' + cleaned.slice(-2);
+        const dotVal = parseFloat(withDot);
+        if (!isNaN(dotVal) && dotVal > 0) {
+          // Only prefer the "fixed" version if original doesn't parse well
+          if (isNaN(val) || val > 99999999) { val = dotVal; str = withDot; }
+        }
+      }
+      if (!isNaN(val) && val > 0 && val < 99999999) {
+        candidates.push({ str, val, dist: m.index });
+      }
+    }
+    // Sort by distance: closest number first
+    candidates.sort((a, b) => a.dist - b.dist);
+
+    // Merge adjacent single-digit numbers (OCR often splits "24" into "2" "4")
+    for (let i = 0; i < candidates.length - 1; i++) {
+      const a = candidates[i], b = candidates[i + 1];
+      if (a.str.length === 1 && b.str.length === 1 &&
+          !a.str.includes('.') && !b.str.includes('.') &&
+          b.dist - (a.dist + a.str.length) <= 2) {
+        const merged = a.str + b.str;
+        const mergedVal = parseFloat(merged);
+        if (mergedVal > 0 && mergedVal < 99999999) {
+          candidates.splice(i, 2, { str: merged, val: mergedVal, dist: a.dist });
+          i--; // re-check this position
+        }
+      }
+    }
+
+    return candidates;
+  }
+
+  // ---- main logic ----
 
   let gen = '', grid = '';
 
-  for (const re of genPatterns) {
-    const m = flat.match(re);
-    if (m) {
-      const val = parseFloat(m[1].replace(/,/g, ''));
-      if (!isNaN(val) && val > 0 && val < 99999999) {
-        gen = m[1].replace(/,/g, '');
-        console.log(`  gen matched: value=${gen}`);
+  // Step 1: find label positions (fuzzy tolerance for OCR errors)
+  const genIdx = fuzzyIndexOf(flat, '发电量');  // 发电量
+  const gridIdx = fuzzyIndexOf(flat, '上网电量');  // 上网电量
+
+  console.log(`  label positions: 发电量=${genIdx}, 上网电量=${gridIdx}`);
+
+  // Step 2: extract nearest number after each label (within 250 chars)
+  // kWh range for distributed solar: typically 100 ~ 5,000,000 per month
+  // Reject >5M as likely OCR noise concatenation (e.g. 6530303.777)
+  const MAX_KWH = 5000000;
+
+  if (genIdx >= 0) {
+    const nums = findNumbersNear(genIdx, 250);
+    console.log(`  gen candidates: ${JSON.stringify(nums.slice(0, 5).map(n => n.str + '(d=' + n.dist + ')'))})`);
+    for (const n of nums) {
+      if (n.val > 0 && n.val < MAX_KWH) { gen = n.str; break; }
+    }
+    if (!gen && nums.length > 0) {
+      gen = nums[0].str;
+      console.log(`  WARNING: gen=${gen} outside 0~${MAX_KWH}, may be OCR noise`);
+    }
+    if (gen) console.log(`  gen = ${gen}`);
+  }
+
+  if (gridIdx >= 0) {
+    const nums = findNumbersNear(gridIdx, 250);
+    console.log(`  grid candidates: ${JSON.stringify(nums.slice(0, 5).map(n => n.str + '(d=' + n.dist + ')'))})`);
+    for (const n of nums) {
+      if (n.val > 0 && n.val < MAX_KWH) { grid = n.str; break; }
+    }
+    if (!grid && nums.length > 0) {
+      grid = nums[0].str;
+      console.log(`  WARNING: grid=${grid} outside 0~${MAX_KWH}, may be OCR noise`);
+    }
+    if (grid) console.log(`  grid = ${grid}`);
+  }
+
+  // Step 2.5: kWh values are ALWAYS integers on bills — skip decimal candidates
+  // (yuan amounts like 18353.87 have decimals and should never be picked as kWh)
+  if (gen && gen.includes('.')) {
+    const nums = findNumbersNear(genIdx, 250);
+    for (const n of nums) {
+      if (!n.str.includes('.') && n.val > 0 && n.val < MAX_KWH) {
+        console.log(`  gen decimal->integer fix: ${gen} -> ${n.str}`);
+        gen = n.str; break;
+      }
+    }
+  }
+  if (grid && grid.includes('.')) {
+    const nums = findNumbersNear(gridIdx, 250);
+    for (const n of nums) {
+      if (!n.str.includes('.') && n.val > 0 && n.val < MAX_KWH) {
+        console.log(`  grid decimal->integer fix: ${grid} -> ${n.str}`);
+        grid = n.str; break;
+      }
+    }
+  }
+
+  // Step 3: fix gen==grid (both grabbed same number from shared value block).
+  // Only swap if the next candidate is also an INTEGER — kWh are always integer,
+  // so a decimal next-candidate is a yuan amount, not a valid kWh value.
+  if (gen && grid && gen === grid) {
+    const nums = findNumbersNear(gridIdx >= 0 ? gridIdx : genIdx, 250);
+    for (let i = 1; i < nums.length; i++) {
+      if (nums[i].str !== gen && !nums[i].str.includes('.') && nums[i].val > 0 && nums[i].val < MAX_KWH) {
+        console.log(`  gen==grid fix: grid ${grid} -> ${nums[i].str}`);
+        grid = nums[i].str;
         break;
       }
     }
   }
 
-  for (const re of gridPatterns) {
-    const m = flat.match(re);
-    if (m) {
-      const val = parseFloat(m[1].replace(/,/g, ''));
-      if (!isNaN(val) && val > 0 && val < 99999999) {
-        grid = m[1].replace(/,/g, '');
-        console.log(`  grid matched: value=${grid}`);
-        break;
-      }
+  // Step 4: validate — for solar, generation >= grid-connected
+  if (gen && grid) {
+    const gv = parseFloat(gen), gd = parseFloat(grid);
+    if (gd > gv * 1.05) {
+      // Grid > gen by more than 5% — likely OCR misread or wrong number picked
+      console.log(`  WARNING: grid(${grid}) > gen(${gen}), values may be incorrect`);
+      // Try swapping: maybe labels were read in wrong order
+      const tmp = gen; gen = grid; grid = tmp;
+      console.log(`  swapped: gen=${gen}, grid=${grid}`);
     }
   }
 
-  // Fallback: find all decimal numbers, larger=gen, smaller=grid
+  // Step 5: fallback — try partial label match, then size-based
   if (!gen || !grid) {
-    const allNums = [...flat.matchAll(/(\d{3,7}\.\d{1,2})/g)]
-      .map(m => ({ str: m[1], val: parseFloat(m[1]), idx: m.index }))
-      .filter(n => n.val > 0);
+    console.log(`  fallback (gen=${gen || '?'}, grid=${grid || '?'})`);
 
-    const tableIdx = Math.max(
+    // If label not found, try partial match (e.g. "电量" instead of "发电量")
+    const genIdx2 = genIdx >= 0 ? genIdx : fuzzyIndexOf(flat, '电量');
+    const gridIdx2 = gridIdx >= 0 ? gridIdx : fuzzyIndexOf(flat, '网电量');
+
+    // Collect numbers, filtering to reasonable kWh range
+    const allNums = [];
+    const re = /[\d,.]{1,15}/g;
+    let m;
+    while ((m = re.exec(flat)) !== null) {
+      const raw = m[0];
+      const cleaned = raw.replace(/,/g, '');
+      let val = parseFloat(cleaned);
+      if ((isNaN(val) || cleaned.length < 4) && cleaned.length >= 5 && cleaned.length <= 9 && !cleaned.includes('.')) {
+        const withDot = cleaned.slice(0, -2) + '.' + cleaned.slice(-2);
+        const dotVal = parseFloat(withDot);
+        if (!isNaN(dotVal) && dotVal > 0) { val = dotVal; }
+      }
+      // Only keep numbers within reasonable kWh range
+      if (!isNaN(val) && val > 0 && val < MAX_KWH) {
+        allNums.push({ str: cleaned, val, idx: m.index });
+      }
+    }
+
+    // Exclude meter-reading table section
+    const meterIdx = Math.max(
       flat.indexOf('正向有功'), flat.indexOf('反向有功'),
       flat.indexOf('电能表'), flat.indexOf('示数')
     );
-    const relevantNums = tableIdx > 0
-      ? allNums.filter(n => n.idx < tableIdx)
+    const relevant = meterIdx > 0
+      ? allNums.filter(n => n.idx < meterIdx)
       : allNums;
 
-    console.log(`  fallback: allNums=${JSON.stringify(allNums.map(n => n.str))}, relevant=${JSON.stringify(relevantNums.map(n => n.str))}`);
+    const preview = (arr) => arr.slice(0, 6).map(n => n.str + '@' + n.idx).join(', ');
+    console.log(`  allNums (filtered <${MAX_KWH}): ${preview(allNums)}`);
+    console.log(`  relevant: ${preview(relevant)}`);
 
-    if (!gen && !grid && relevantNums.length >= 2) {
-      const sorted = [...relevantNums].sort((a, b) => b.val - a.val);
+    // Try proximity to partial labels
+    const proxNums = [];
+    for (const n of relevant) {
+      if (!gen && genIdx2 >= 0 && n.idx > genIdx2 - 10 && n.idx - genIdx2 < 250) {
+        gen = n.str; console.log(`  gen via proximity: ${gen}`);
+      }
+      if (!grid && gridIdx2 >= 0 && n.idx > gridIdx2 - 10 && n.idx - gridIdx2 < 250) {
+        grid = n.str; console.log(`  grid via proximity: ${grid}`);
+      }
+    }
+
+    // Last resort: size-based
+    if (!gen && !grid && relevant.length >= 2) {
+      const sorted = [...relevant].sort((a, b) => b.val - a.val);
       gen = sorted[0].str;
       grid = sorted[1].str;
-      console.log(`  size-based fallback: gen=${gen}, grid=${grid}`);
-    } else if (!gen && relevantNums.length >= 1) {
-      const genPos = flat.indexOf('发电量');
-      const gridPos = flat.indexOf('上网电量');
-      for (const n of relevantNums) {
-        if (genPos >= 0 && Math.abs(n.idx - genPos) < 200 && !gen) gen = n.str;
-        if (gridPos >= 0 && Math.abs(n.idx - gridPos) < 200 && !grid) grid = n.str;
+      console.log(`  size fallback: gen=${gen}, grid=${grid}`);
+    } else if (!gen && relevant.length >= 1) {
+      for (const n of relevant) {
+        if (!gen && genIdx2 >= 0 && n.idx > genIdx2 - 10 && n.idx - genIdx2 < 250) gen = n.str;
+        if (!grid && gridIdx2 >= 0 && n.idx > gridIdx2 - 10 && n.idx - gridIdx2 < 250) grid = n.str;
       }
+      console.log(`  partial proximity: gen=${gen}, grid=${grid}`);
     }
   }
 
@@ -563,10 +730,11 @@ function parseGenerationAndGrid(text) {
 
 function parseAmount(text) {
   const flat = text.replace(/\s+/g, '');
+  let result;
 
-  // Strategy 1: "账单金额" / "合计收益" — exact field labels on the bill
+  // Strategy 1: "账单金额" / "合计收益" — primary total indicators
   for (const kw of ['账单金额', '合计收益']) {
-    result = findNumberNear(text, kw, {
+    result = findNumberNear(flat, kw, {
       unitPats: ['元', '圆'],
       minVal: 0.01, maxVal: 99999999
     });
@@ -574,22 +742,22 @@ function parseAmount(text) {
   }
 
   // Strategy 2: "金额" — generic total indicator
-  result = findNumberNear(text, '金额', {
+  result = findNumberNear(flat, '金额', {
     unitPats: ['元', '圆'],
     minVal: 0.01, maxVal: 99999999
   });
   if (result) return result;
 
-  // Strategy 3: "上网电费" / "合计" / "应付" — backup total indicators
+  // Strategy 3: "上网电费" / "合计" / "应付" / "应收" / "结算金额" / "应付电费" — backup
   for (const kw of ['上网电费', '合计', '应付', '应收', '结算金额', '应付电费']) {
-    result = findNumberNear(text, kw, {
+    result = findNumberNear(flat, kw, {
       unitPats: ['元', '圆'],
       minVal: 0.01, maxVal: 99999999
     });
     if (result) return result;
   }
 
-  // Strategy 3: find ALL "X元" values, return the largest (total > any component charge)
+  // Strategy 4: find ALL "X元" values, return the largest (last resort)
   const allYuan = [...flat.matchAll(/([\d,.]+)\s*[元圆]/g)]
     .map(m => ({ str: m[1].replace(/,/g, ''), val: parseFloat(m[1].replace(/,/g, '')) }))
     .filter(x => !isNaN(x.val) && x.val > 0);
@@ -649,6 +817,48 @@ async function processFile(fileItem) {
   }
 }
 
+// ===== Deduplicate by account number =====
+// Keep the record with the most complete data for each account number.
+// Records without an account number are kept as-is (each treated as unique).
+function deduplicateByAccount(results) {
+  const groups = new Map();
+  const orphans = []; // records without account number
+
+  for (const r of results) {
+    if (!r.accountNumber) {
+      orphans.push(r);
+      continue;
+    }
+    if (!groups.has(r.accountNumber)) {
+      groups.set(r.accountNumber, []);
+    }
+    groups.get(r.accountNumber).push(r);
+  }
+
+  const deduped = [];
+  let removedCount = 0;
+
+  for (const [acct, records] of groups) {
+    // Pick the most complete record (most non-empty fields)
+    if (records.length > 1) {
+      records.sort((a, b) => {
+        const scoreA = [a.accountNumber, a.billingPeriod, a.generationKwh, a.gridConnectedKwh, a.amount]
+          .filter(v => v).length;
+        const scoreB = [b.accountNumber, b.billingPeriod, b.generationKwh, b.gridConnectedKwh, b.amount]
+          .filter(v => v).length;
+        return scoreB - scoreA;
+      });
+      removedCount += records.length - 1;
+    }
+    deduped.push(records[0]);
+  }
+
+  // Merge back orphans (no account number = no dup check possible)
+  deduped.push(...orphans);
+
+  return { results: deduped, removedCount };
+}
+
 // ===== Batch process =====
 btnProcess.addEventListener('click', async () => {
   const pending = files.filter(f => f.status === 'pending');
@@ -672,14 +882,22 @@ btnProcess.addEventListener('click', async () => {
     completed++;
   }
 
+  // Deduplicate by account number before rendering
+  const { results: deduped, removedCount } = deduplicateByAccount(allResults);
+  allResults = deduped;
+
   progressFill.style.width = '100%';
-  progressText.textContent = `完成！共处理 ${total} 张图片，成功 ${allResults.length} 张`;
+  let msg = `完成！共处理 ${total} 张图片，成功 ${allResults.length + removedCount} 张`;
+  if (removedCount > 0) {
+    msg += `，已按发电户号去重 ${removedCount} 条`;
+  }
+  progressText.textContent = msg;
 
   btnProcess.disabled = false;
-  renderResults();
+  renderResults(removedCount);
 });
 
-function renderResults() {
+function renderResults(removedCount = 0) {
   if (allResults.length === 0) {
     resultWrap.classList.remove('show');
     summary.classList.remove('show');
@@ -714,7 +932,9 @@ function renderResults() {
   const totalAmount = allResults.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
 
   summary.innerHTML = `
-    共识别 <b>${allResults.length}</b> 条记录 &nbsp;|&nbsp;
+    共识别 <b>${allResults.length}</b> 条记录
+    ${removedCount > 0 ? `（已去重 <b>${removedCount}</b> 条）` : ''}
+    &nbsp;|&nbsp;
     发电量合计：<b>${totalGen.toFixed(2)}</b> kWh &nbsp;|&nbsp;
     上网电量合计：<b>${totalGrid.toFixed(2)}</b> kWh &nbsp;|&nbsp;
     企业自用电量合计：<b>${totalSelfUse}</b> kWh &nbsp;|&nbsp;
@@ -741,7 +961,7 @@ btnDownload.addEventListener('click', () => {
       const grid = parseFloat(r.gridConnectedKwh) || 0;
       return gen && grid ? Math.round(Math.max(0, gen - grid)) : '';
     })(),
-    '账单金额(元)': r.amount ? parseFloat(r.amount) : '',
+    '国网电费（元）': r.amount ? parseFloat(r.amount) : '',
   }));
 
   const ws = XLSX.utils.json_to_sheet(rows);
