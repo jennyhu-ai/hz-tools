@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <title>恒臻主动呈现训练营</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f8fafc;
+      --muted: rgba(248, 250, 252, 0.68);
+      --line: rgba(255, 255, 255, 0.16);
+      --panel: #f8fbff;
+      --accent: #60a5fa;
+      --drawer-ink: #15305f;
+      --drawer-muted: #61789d;
+      --drawer-line: #d8e7ff;
+      --drawer-soft: #ecf5ff;
+      --offline-bg: #fff4e5;
+      --offline-ink: #c2410c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0027b7;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    button {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      background: #0027b7;
+    }
+
+    .feed {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .slide {
+      position: relative;
+      width: 100%;
+      height: 100svh;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      background: #0027b7;
+    }
+
+    .video-layer {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #0027b7;
+    }
+
+    video {
+      width: min(100vw, calc(100svh * 9 / 16));
+      height: min(100svh, calc(100vw * 16 / 9));
+      object-fit: contain;
+      background: #0027b7;
+    }
+
+    .shade {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.56), transparent 24%, transparent 58%, rgba(0,0,0,.82)),
+        linear-gradient(90deg, rgba(0,0,0,.28), transparent 28%, transparent 72%, rgba(0,0,0,.28));
+    }
+
+    .topbar {
+      position: fixed;
+      z-index: 20;
+      top: max(12px, env(safe-area-inset-top));
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .brand {
+      min-width: 0;
+      pointer-events: auto;
+    }
+
+    .brand strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .icon-button,
+    .side-button {
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(7, 11, 18, .52);
+      backdrop-filter: blur(14px);
+    }
+
+    .icon-button {
+      width: 40px;
+      height: 40px;
+    }
+
+    .side-button {
+      width: 48px;
+      height: 48px;
+    }
+
+    svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .meta {
+      position: absolute;
+      z-index: 5;
+      left: 16px;
+      right: 78px;
+      bottom: max(26px, env(safe-area-inset-bottom));
+    }
+
+    .kicker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill {
+      min-height: 25px;
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      color: var(--ink);
+      font-weight: 750;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 12em;
+      font-size: clamp(24px, 7vw, 38px);
+      line-height: 1.15;
+      letter-spacing: 0;
+      text-shadow: 0 2px 20px rgba(0,0,0,.42);
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .side-actions {
+      position: absolute;
+      z-index: 6;
+      right: 13px;
+      bottom: max(108px, calc(env(safe-area-inset-bottom) + 92px));
+      display: grid;
+      gap: 12px;
+    }
+
+    .center-play {
+      position: absolute;
+      z-index: 7;
+      left: 50%;
+      top: 50%;
+      width: 82px;
+      height: 82px;
+      display: none;
+      place-items: center;
+      transform: translate(-50%, -50%);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(0,0,0,.48);
+      backdrop-filter: blur(12px);
+    }
+
+    .slide.paused .center-play { display: grid; }
+
+    .center-play svg {
+      width: 34px;
+      height: 34px;
+      fill: currentColor;
+      stroke: none;
+    }
+
+    .drawer {
+      position: fixed;
+      z-index: 40;
+      inset: auto 0 0 0;
+      height: min(70svh, 600px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      border-top: 1px solid var(--line);
+      border-radius: 16px 16px 0 0;
+      background: var(--panel);
+      color: var(--drawer-ink);
+      transform: translateY(102%);
+      transition: transform 170ms ease;
+      backdrop-filter: blur(18px);
+    }
+
+    .drawer.open { transform: translateY(0); }
+
+    .drawer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 16px 10px;
+      border-bottom: 1px solid var(--drawer-line);
+    }
+
+    .drawer-head strong {
+      display: block;
+      font-size: 16px;
+    }
+
+    .drawer-head span {
+      display: block;
+      margin-top: 3px;
+      color: var(--drawer-muted);
+      font-size: 12px;
+    }
+
+    .episode-list {
+      overflow-y: auto;
+      padding: 8px 8px max(16px, env(safe-area-inset-bottom));
+    }
+
+    .episode-row {
+      width: 100%;
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 9px 10px;
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .episode-row.active {
+      background: var(--drawer-soft);
+    }
+
+    .row-no {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: #e7f0ff;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .episode-row.active .row-no {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .row-title {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .row-meta {
+      display: block;
+      margin-top: 5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--drawer-muted);
+      font-size: 12px;
+    }
+
+    .offline-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      margin-left: 6px;
+      padding: 2px 8px;
+      border: 1px solid #fed7aa;
+      border-radius: 999px;
+      background: var(--offline-bg);
+      color: var(--offline-ink);
+      font-size: 12px;
+      font-weight: 750;
+      vertical-align: middle;
+    }
+
+    .empty {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 22px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    body.no-videos .empty { display: grid; }
+
+    @media (min-width: 760px) {
+      .meta {
+        left: calc(50vw - 240px);
+        right: auto;
+        width: 400px;
+      }
+
+      .side-actions {
+        right: calc(50vw - 310px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main id="feed" class="feed" aria-label="恒臻主动呈现训练营"></main>
+    <div class="topbar">
+      <div class="brand">
+        <strong>恒臻主动呈现训练营</strong>
+        <span id="progressText">加载中</span>
+      </div>
+      <div class="actions">
+        <button id="soundButton" class="icon-button" type="button" aria-label="声音">
+          <svg id="soundIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 5M21 9l-5 5"/></svg>
+        </button>
+        <button id="menuButton" class="icon-button" type="button" aria-label="目录">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <section id="drawer" class="drawer" aria-label="课程目录" aria-hidden="true">
+      <div class="drawer-head">
+        <div>
+          <strong>课程目录</strong>
+          <span id="drawerSummary">可用即收录</span>
+        </div>
+        <button id="closeDrawer" class="icon-button" type="button" aria-label="关闭目录">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <nav id="episodeList" class="episode-list"></nav>
+    </section>
+    <div class="empty">还没有找到可播放的视频。请先生成成片，再重新运行发布脚本。</div>
+  </div>
+  <script id="series-data" type="application/json">{
+  "cosBaseUrl": "__COS_BASE_URL__",
+  "seriesTitle": "恒臻主动呈现训练营",
+  "episodes": [
+    {
+      "no": "01",
+      "title": "为什么要主动呈现",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-01.mp4",
+      "cover": "covers/active-presentation-template-01.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "02",
+      "title": "主动呈现对公司的7大价值",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-02.mp4",
+      "cover": "covers/active-presentation-template-02.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "03",
+      "title": "主动呈现对个人的5大价值",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-03.mp4",
+      "cover": "covers/active-presentation-template-03.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "04",
+      "title": "工作好坏的6个层次",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-04.mp4",
+      "cover": "covers/active-presentation-template-04.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "05",
+      "title": "开工资料和人员保险怎么发",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-05.mp4",
+      "cover": "covers/active-presentation-template-05.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "06",
+      "title": "安全教育和劳保用品怎么呈现",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-06.mp4",
+      "cover": "covers/active-presentation-template-06.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "07",
+      "title": "横幅班组交底和仪式感",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-07.mp4",
+      "cover": "covers/active-presentation-template-07.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "08",
+      "title": "施工进度计划怎么让业主看懂",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-08.mp4",
+      "cover": "covers/active-presentation-template-08.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "09",
+      "title": "暂时不能主体施工时如何快速进场",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-09.mp4",
+      "cover": "covers/active-presentation-template-09.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "10",
+      "title": "开工12步的日常汇报闭环",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-10.mp4",
+      "cover": "covers/active-presentation-template-10.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "11",
+      "title": "施工日报不是流水账",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-11.mp4",
+      "cover": "covers/active-presentation-template-11.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "12",
+      "title": "工作总结和下周计划怎么写",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-12.mp4",
+      "cover": "covers/active-presentation-template-12.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "13",
+      "title": "关键节点照片怎么拍怎么说",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-13.mp4",
+      "cover": "covers/active-presentation-template-13.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "14",
+      "title": "验收报告怎么建立可追溯信任",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-14.mp4",
+      "cover": "covers/active-presentation-template-14.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "15",
+      "title": "交底单和颗粒度交底怎么呈现",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-15.mp4",
+      "cover": "covers/active-presentation-template-15.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "16",
+      "title": "现场照片和视频要拍什么",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-16.mp4",
+      "cover": "covers/active-presentation-template-16.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "17",
+      "title": "站班会为什么要拍照和留痕",
+      "category": "安全文明",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-17.mp4",
+      "cover": "covers/active-presentation-template-17.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "18",
+      "title": "文明施工为什么也是营销",
+      "category": "安全文明",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-18.mp4",
+      "cover": "covers/active-presentation-template-18.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "19",
+      "title": "危险点排查和应急通报怎么说",
+      "category": "风险管理",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-19.mp4",
+      "cover": "covers/active-presentation-template-19.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "20",
+      "title": "工程资料和红圈痕迹怎么变成信任证据",
+      "category": "资料管理",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-20.mp4",
+      "cover": "covers/active-presentation-template-20.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "21",
+      "title": "温州储能项目为什么被表扬",
+      "category": "案例课",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-21.mp4",
+      "cover": "covers/active-presentation-template-21.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "22",
+      "title": "业主的信任是怎么一步步建立的",
+      "category": "案例课",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-22.mp4",
+      "cover": "covers/active-presentation-template-22.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "23",
+      "title": "夸夸团和约束单真正管什么",
+      "category": "机制课",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-23.mp4",
+      "cover": "covers/active-presentation-template-23.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "24",
+      "title": "让主动呈现成为组织的肌肉记忆",
+      "category": "收束课",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-24.mp4",
+      "cover": "covers/active-presentation-template-24.png",
+      "missingVideo": true,
+      "missingCover": true
+    }
+  ],
+  "availableEpisodes": [
+    {
+      "no": "01",
+      "title": "为什么要主动呈现",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-01.mp4",
+      "cover": "covers/active-presentation-template-01.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "02",
+      "title": "主动呈现对公司的7大价值",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-02.mp4",
+      "cover": "covers/active-presentation-template-02.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "03",
+      "title": "主动呈现对个人的5大价值",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-03.mp4",
+      "cover": "covers/active-presentation-template-03.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "04",
+      "title": "工作好坏的6个层次",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-04.mp4",
+      "cover": "covers/active-presentation-template-04.png",
+      "missingVideo": false,
+      "missingCover": false
+    }
+  ]
+}</script>
+  <script>
+    const data = JSON.parse(document.getElementById("series-data").textContent);
+    const available = data.availableEpisodes;
+    const allEpisodes = data.episodes;
+    const feed = document.getElementById("feed");
+    const episodeList = document.getElementById("episodeList");
+    const drawer = document.getElementById("drawer");
+    const progressText = document.getElementById("progressText");
+    const drawerSummary = document.getElementById("drawerSummary");
+    const soundButton = document.getElementById("soundButton");
+    const soundIcon = document.getElementById("soundIcon");
+    const menuButton = document.getElementById("menuButton");
+    const closeDrawer = document.getElementById("closeDrawer");
+    let activeIndex = 0;
+    let muted = true;
+
+    const icons = {
+      soundOff: '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 5M21 9l-5 5"/>',
+      soundOn: '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+    };
+
+    function assetUrl(relativePath) {
+      if (!relativePath) return "";
+      const base = data.cosBaseUrl;
+      if (base && base !== "__COS_BASE_URL__") return base + "/" + relativePath.replace(/^\.\//, "");
+      return relativePath;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char]);
+    }
+
+    function renderSlides() {
+      if (available.length === 0) {
+        document.body.classList.add("no-videos");
+        progressText.textContent = "暂无视频";
+        return;
+      }
+
+      feed.innerHTML = available.map((episode, index) => (
+        '<article class="slide paused" data-index="' + index + '" data-no="' + episode.no + '">' +
+          '<div class="video-layer"><video autoplay playsinline webkit-playsinline muted loop preload="none" poster="' + assetUrl(episode.cover) + '"></video></div>' +
+          '<div class="shade"></div>' +
+          '<button class="center-play" type="button" aria-label="播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7Z"/></svg></button>' +
+          '<div class="side-actions">' +
+            '<button class="side-button pause-button" type="button" aria-label="播放或暂停"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8zM13 5h3v14h-3z"/></svg></button>' +
+            '<button class="side-button list-button" type="button" aria-label="目录"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg></button>' +
+          '</div>' +
+          '<div class="meta">' +
+            '<div class="kicker"><span class="pill">' + episode.no + ' / ' + allEpisodes.length + '</span><span>' + escapeHtml(episode.category) + '</span></div>' +
+            '<h1>' + escapeHtml(episode.title) + '</h1>' +
+          '</div>' +
+        '</article>'
+      )).join("");
+    }
+
+    function renderList() {
+      episodeList.innerHTML = allEpisodes.map((episode) => {
+        const index = available.findIndex((item) => item.no === episode.no);
+        const disabled = index === -1;
+        return '<button class="episode-row' + (index === activeIndex ? " active" : "") + (disabled ? " unavailable" : "") + '" type="button" data-index="' + index + '"' + (disabled ? " disabled" : "") + '>' +
+          '<span class="row-no">' + episode.no + '</span>' +
+          '<span><span class="row-title">' + escapeHtml(episode.title) + (disabled ? '<span class="offline-tag">未上线</span>' : "") + '</span><span class="row-meta">' + escapeHtml(episode.category) + '</span></span>' +
+        '</button>';
+      }).join("");
+    }
+
+    function hydrateAround(index) {
+      document.querySelectorAll(".slide").forEach((slide) => {
+        const slideIndex = Number(slide.dataset.index);
+        const video = slide.querySelector("video");
+        if (Math.abs(slideIndex - index) <= 1) {
+          if (!video.src) video.src = assetUrl(available[slideIndex].video);
+          video.preload = slideIndex === index ? "auto" : "metadata";
+        } else {
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+          video.preload = "none";
+        }
+      });
+    }
+
+    function setActive(index, shouldScroll) {
+      activeIndex = Math.max(0, Math.min(index, available.length - 1));
+      hydrateAround(activeIndex);
+      progressText.textContent = "第 " + available[activeIndex].no + " 集 · " + (activeIndex + 1) + " / " + available.length;
+
+      document.querySelectorAll(".slide").forEach((slide) => {
+        const slideIndex = Number(slide.dataset.index);
+        const video = slide.querySelector("video");
+        video.muted = muted;
+        if (slideIndex === activeIndex) {
+          video.play().then(() => slide.classList.remove("paused")).catch(() => slide.classList.add("paused"));
+        } else {
+          video.pause();
+          slide.classList.remove("paused");
+        }
+      });
+
+      document.querySelectorAll(".episode-row").forEach((row) => {
+        row.classList.toggle("active", Number(row.dataset.index) === activeIndex);
+      });
+
+      if (shouldScroll) {
+        document.querySelector('.slide[data-index="' + activeIndex + '"]').scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function togglePlayback() {
+      const slide = document.querySelector('.slide[data-index="' + activeIndex + '"]');
+      if (!slide) return;
+      const video = slide.querySelector("video");
+      if (video.paused) {
+        video.play().then(() => slide.classList.remove("paused")).catch(() => slide.classList.add("paused"));
+      } else {
+        video.pause();
+        slide.classList.add("paused");
+      }
+    }
+
+    function toggleSound() {
+      muted = !muted;
+      soundIcon.innerHTML = muted ? icons.soundOff : icons.soundOn;
+      document.querySelectorAll("video").forEach((video) => {
+        video.muted = muted;
+      });
+      const current = document.querySelector('.slide[data-index="' + activeIndex + '"] video');
+      if (current) current.play().catch(() => {});
+    }
+
+    function openDrawer() {
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    }
+
+    function hideDrawer() {
+      drawer.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActive(Number(visible.target.dataset.index), false);
+    }, { threshold: [0.62, 0.78] });
+
+    renderSlides();
+    renderList();
+    drawerSummary.textContent = available.length + " / " + allEpisodes.length + " 集已上线";
+
+    document.querySelectorAll(".slide").forEach((slide) => {
+      observer.observe(slide);
+      slide.addEventListener("click", (event) => {
+        if (event.target.closest("button")) return;
+        togglePlayback();
+      });
+    });
+
+    document.querySelectorAll(".center-play, .pause-button").forEach((button) => button.addEventListener("click", togglePlayback));
+    document.querySelectorAll(".list-button").forEach((button) => button.addEventListener("click", openDrawer));
+    soundButton.addEventListener("click", toggleSound);
+    menuButton.addEventListener("click", openDrawer);
+    closeDrawer.addEventListener("click", hideDrawer);
+    episodeList.addEventListener("click", (event) => {
+      const row = event.target.closest(".episode-row");
+      if (!row || row.disabled) return;
+      hideDrawer();
+      setActive(Number(row.dataset.index), true);
+    });
+
+    if (available.length) setActive(0, false);
+  </script>
+</body>
+</html>

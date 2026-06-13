@@ -1,0 +1,271 @@
+{
+  "cosBaseUrl": "__COS_BASE_URL__",
+  "generatedAt": "2026-06-13T02:31:13.866Z",
+  "source": "video-data.json",
+  "episodes": [
+    {
+      "no": "01",
+      "title": "为什么要主动呈现",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-01.mp4",
+      "cover": "covers/active-presentation-template-01.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "02",
+      "title": "主动呈现对公司的7大价值",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-02.mp4",
+      "cover": "covers/active-presentation-template-02.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "03",
+      "title": "主动呈现对个人的5大价值",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-03.mp4",
+      "cover": "covers/active-presentation-template-03.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "04",
+      "title": "工作好坏的6个层次",
+      "category": "理念课",
+      "status": "初稿完成",
+      "available": true,
+      "video": "videos/active-presentation-template-04.mp4",
+      "cover": "covers/active-presentation-template-04.png",
+      "missingVideo": false,
+      "missingCover": false
+    },
+    {
+      "no": "05",
+      "title": "开工资料和人员保险怎么发",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-05.mp4",
+      "cover": "covers/active-presentation-template-05.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "06",
+      "title": "安全教育和劳保用品怎么呈现",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-06.mp4",
+      "cover": "covers/active-presentation-template-06.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "07",
+      "title": "横幅班组交底和仪式感",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-07.mp4",
+      "cover": "covers/active-presentation-template-07.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "08",
+      "title": "施工进度计划怎么让业主看懂",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-08.mp4",
+      "cover": "covers/active-presentation-template-08.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "09",
+      "title": "暂时不能主体施工时如何快速进场",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-09.mp4",
+      "cover": "covers/active-presentation-template-09.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "10",
+      "title": "开工12步的日常汇报闭环",
+      "category": "开工动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-10.mp4",
+      "cover": "covers/active-presentation-template-10.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "11",
+      "title": "施工日报不是流水账",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-11.mp4",
+      "cover": "covers/active-presentation-template-11.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "12",
+      "title": "工作总结和下周计划怎么写",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-12.mp4",
+      "cover": "covers/active-presentation-template-12.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "13",
+      "title": "关键节点照片怎么拍怎么说",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-13.mp4",
+      "cover": "covers/active-presentation-template-13.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "14",
+      "title": "验收报告怎么建立可追溯信任",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-14.mp4",
+      "cover": "covers/active-presentation-template-14.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "15",
+      "title": "交底单和颗粒度交底怎么呈现",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-15.mp4",
+      "cover": "covers/active-presentation-template-15.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "16",
+      "title": "现场照片和视频要拍什么",
+      "category": "日常动作",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-16.mp4",
+      "cover": "covers/active-presentation-template-16.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "17",
+      "title": "站班会为什么要拍照和留痕",
+      "category": "安全文明",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-17.mp4",
+      "cover": "covers/active-presentation-template-17.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "18",
+      "title": "文明施工为什么也是营销",
+      "category": "安全文明",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-18.mp4",
+      "cover": "covers/active-presentation-template-18.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "19",
+      "title": "危险点排查和应急通报怎么说",
+      "category": "风险管理",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-19.mp4",
+      "cover": "covers/active-presentation-template-19.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "20",
+      "title": "工程资料和红圈痕迹怎么变成信任证据",
+      "category": "资料管理",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-20.mp4",
+      "cover": "covers/active-presentation-template-20.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "21",
+      "title": "温州储能项目为什么被表扬",
+      "category": "案例课",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-21.mp4",
+      "cover": "covers/active-presentation-template-21.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "22",
+      "title": "业主的信任是怎么一步步建立的",
+      "category": "案例课",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-22.mp4",
+      "cover": "covers/active-presentation-template-22.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "23",
+      "title": "夸夸团和约束单真正管什么",
+      "category": "机制课",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-23.mp4",
+      "cover": "covers/active-presentation-template-23.png",
+      "missingVideo": true,
+      "missingCover": true
+    },
+    {
+      "no": "24",
+      "title": "让主动呈现成为组织的肌肉记忆",
+      "category": "收束课",
+      "status": "初稿完成",
+      "available": false,
+      "video": "videos/active-presentation-template-24.mp4",
+      "cover": "covers/active-presentation-template-24.png",
+      "missingVideo": true,
+      "missingCover": true
+    }
+  ]
+}
