@@ -90,17 +90,17 @@
       inset: 0;
       pointer-events: none;
       background:
-        linear-gradient(180deg, rgba(0,0,0,.56), transparent 24%, transparent 58%, rgba(0,0,0,.82)),
-        linear-gradient(90deg, rgba(0,0,0,.28), transparent 28%, transparent 72%, rgba(0,0,0,.28));
+        linear-gradient(180deg, rgba(0,0,0,.56), transparent 24%, transparent 82%, rgba(0,0,0,.52)),
+        linear-gradient(90deg, rgba(0,0,0,.18), transparent 14%, transparent 86%, rgba(0,0,0,.18));
     }
 
     .topbar {
+      display: none;
       position: fixed;
       z-index: 20;
       top: max(12px, env(safe-area-inset-top));
       left: 12px;
       right: 12px;
-      display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
@@ -165,6 +165,7 @@
     }
 
     .meta {
+      display: none;
       position: absolute;
       z-index: 5;
       left: 16px;
@@ -740,10 +741,13 @@
     const closeDrawer = document.getElementById("closeDrawer");
     let activeIndex = 0;
     let muted = true;
+    let userPausedIndex = null;
 
     const icons = {
       soundOff: '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 5M21 9l-5 5"/>',
       soundOn: '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+      play: '<path d="M8 5v14l11-7Z"/>',
+      pause: '<path d="M8 5h3v14H8zM13 5h3v14h-3z"/>',
     };
 
     function assetUrl(relativePath) {
@@ -776,7 +780,8 @@
           '<div class="shade"></div>' +
           '<button class="center-play" type="button" aria-label="播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7Z"/></svg></button>' +
           '<div class="side-actions">' +
-            '<button class="side-button pause-button" type="button" aria-label="播放或暂停"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8zM13 5h3v14h-3z"/></svg></button>' +
+            '<button class="side-button pause-button" type="button" aria-label="播放或暂停"><svg viewBox="0 0 24 24" aria-hidden="true">' + icons.play + '</svg></button>' +
+            '<button class="side-button sound-button" type="button" aria-label="声音"><svg viewBox="0 0 24 24" aria-hidden="true">' + icons.soundOff + '</svg></button>' +
             '<button class="side-button list-button" type="button" aria-label="目录"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg></button>' +
           '</div>' +
           '<div class="meta">' +
@@ -824,12 +829,24 @@
         const video = slide.querySelector("video");
         video.muted = muted;
         if (slideIndex === activeIndex) {
-          video.play().then(() => slide.classList.remove("paused")).catch(() => slide.classList.add("paused"));
+          if (userPausedIndex === activeIndex) {
+            video.pause();
+            slide.classList.add("paused");
+            return;
+          }
+          video.play().then(() => {
+            slide.classList.remove("paused");
+            updatePlaybackButtons();
+          }).catch(() => {
+            slide.classList.add("paused");
+            updatePlaybackButtons();
+          });
         } else {
           video.pause();
           slide.classList.remove("paused");
         }
       });
+      updatePlaybackButtons();
 
       document.querySelectorAll(".episode-row").forEach((row) => {
         row.classList.toggle("active", Number(row.dataset.index) === activeIndex);
@@ -845,11 +862,37 @@
       if (!slide) return;
       const video = slide.querySelector("video");
       if (video.paused) {
-        video.play().then(() => slide.classList.remove("paused")).catch(() => slide.classList.add("paused"));
+        userPausedIndex = null;
+        video.play().then(() => {
+          slide.classList.remove("paused");
+          updatePlaybackButtons();
+        }).catch(() => {
+          slide.classList.add("paused");
+          updatePlaybackButtons();
+        });
       } else {
+        userPausedIndex = activeIndex;
         video.pause();
         slide.classList.add("paused");
+        updatePlaybackButtons();
       }
+    }
+
+    function updatePlaybackButtons() {
+      document.querySelectorAll(".slide").forEach((slide) => {
+        const video = slide.querySelector("video");
+        const icon = slide.querySelector(".pause-button svg");
+        if (!video || !icon) return;
+        icon.innerHTML = video.paused ? icons.play : icons.pause;
+        slide.classList.toggle("paused", video.paused && Number(slide.dataset.index) === activeIndex);
+      });
+    }
+
+    function bindPlaybackState(slide) {
+      const video = slide.querySelector("video");
+      video.addEventListener("play", updatePlaybackButtons);
+      video.addEventListener("pause", updatePlaybackButtons);
+      video.addEventListener("ended", updatePlaybackButtons);
     }
 
     function toggleSound() {
@@ -857,6 +900,9 @@
       soundIcon.innerHTML = muted ? icons.soundOff : icons.soundOn;
       document.querySelectorAll("video").forEach((video) => {
         video.muted = muted;
+      });
+      document.querySelectorAll(".sound-button svg").forEach((icon) => {
+        icon.innerHTML = muted ? icons.soundOff : icons.soundOn;
       });
       const current = document.querySelector('.slide[data-index="' + activeIndex + '"] video');
       if (current) current.play().catch(() => {});
@@ -882,6 +928,7 @@
     drawerSummary.textContent = available.length + " / " + allEpisodes.length + " 集已上线";
 
     document.querySelectorAll(".slide").forEach((slide) => {
+      bindPlaybackState(slide);
       observer.observe(slide);
       slide.addEventListener("click", (event) => {
         if (event.target.closest("button")) return;
@@ -889,8 +936,17 @@
       });
     });
 
-    document.querySelectorAll(".center-play, .pause-button").forEach((button) => button.addEventListener("click", togglePlayback));
+    document.querySelectorAll(".center-play, .pause-button").forEach((button) => button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      togglePlayback();
+    }));
     document.querySelectorAll(".list-button").forEach((button) => button.addEventListener("click", openDrawer));
+    document.querySelectorAll(".sound-button").forEach((button) => button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleSound();
+    }));
     soundButton.addEventListener("click", toggleSound);
     menuButton.addEventListener("click", openDrawer);
     closeDrawer.addEventListener("click", hideDrawer);
